@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+
+    <!-- Add CSS/Bootstrap links here -->
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ url_for('static', filename='js/component/alerts.js') }}"></script>
+
+    <!-- Spectre CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='lib/spectre-0.5.9/dist/spectre.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='lib/spectre-0.5.9/dist/spectre-exp.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='lib/spectre-0.5.9/dist/spectre-icons.css') }}">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- Jquery JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/general/validation.js') }}"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const params = new URLSearchParams(window.location.search);
+            const status = params.get('status');
+            const title = params.get('title');
+            const message = params.get('message');
+            const redirectUrl = params.get('redirectUrl');
+
+            if (status === 'success') {
+                showSuccessAlert(title, message, redirectUrl);
+            } else if (status === 'error') {
+                showErrorAlert(title, message, redirectUrl);
+            }
+        });
+    </script>
+
+    <!-- Placeholder for page-specific JS -->
+    {% block scripts %}{% endblock %}
+</head>
+<body>
+    <header>
+        <h1>EazeTuition</h1>
+        <nav>
+            <a href="/subject/list">Subject List</a> |
+            <a href="/subject/add">Add Subject</a>
+            
+        </nav>
+        <hr>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <hr>
+        <p>&copy; 2025 EazeTuition</p>
+    </footer>
+</body>
+</html>
+

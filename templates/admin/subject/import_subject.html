@@ -1,0 +1,162 @@
+{% extends "_admin_base.html" %}
+{% block content %}
+
+<form id="importForm" enctype="multipart/form-data">
+    <div class="container">
+        <div class="columns">
+            <div class="formformat column col-6 col-sm-12 card my-single-card">
+
+                <div class="card-header">
+                    <div class="card-title h5">
+                        <button class="topleft-back" type="button" data-get="/subject/list"
+                            uk-tooltip="title: Back to Previous Section; pos: top-left;">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button> &nbsp;
+                        Import Subject (CSV / Excel)
+                    </div>
+
+                    <div class="card-body my-pagecard-body">
+
+                        <!-- Reminder & Template -->
+                        <div class="uk-alert-primary uk-padding-small uk-border-rounded uk-margin">
+                            <h5><strong>📘 Import Reminder</strong></h5>
+                            <p class="uk-text-small">
+                                Please upload a CSV or Excel (.xlsx) file with format in the template.
+                            </p>
+
+                            <p class="uk-text-small uk-margin-small-top">
+                                ⚠️ Duplicate subjects with the <strong>same name and same fees</strong> in the same
+                                education level will be skipped.
+                            </p>
+
+                            <p class="uk-text-small uk-margin-small-top">
+                                Download ready-made templates:
+                                <br>
+                                <button onclick="downloadFile('subject_insert_template.csv')" class="btn btn-primary">
+                                    📄 Download CSV Template
+                                </button>
+
+                                <button onclick="downloadFile('subject_insert_template.xlsx')" class="btn btn-primary">
+                                    📊 Download Excel Template
+                                </button>
+
+                            </p>
+
+                        </div>
+
+                        <!-- File Upload -->
+                        <div class="form-group">
+                            <label class="form-label" for="file">Upload File:</label>
+                            <input class="form-input" type="file" name="file" accept=".csv, .xlsx" required>
+                            <span class="error-message"></span>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="text-right" style="padding-top:16px;">
+                            <button type="reset" class="btn btn-secondary">Reset</button>
+                            <button type="submit" id="importBtn" class="btn btn-primary" disabled>Import</button>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function () {
+
+        const fileInput = $("input[name='file']");
+        const importBtn = $("#importBtn");
+
+        // ==========================================
+        // 1️⃣ Enable button only if file exists
+        // ==========================================
+        fileInput.on("change", function () {
+            importBtn.prop("disabled", this.files.length === 0);
+        });
+
+
+        // ==========================================
+        // 2️⃣ Handle Import Submission (AJAX)
+        // ==========================================
+        $("#importForm").submit(async function (e) {
+            e.preventDefault();
+
+            if (fileInput[0].files.length === 0) {
+                showErrorAlert("No File", "Please upload a file before importing.");
+                return;
+            }
+
+            // --- Confirmation ---
+            let confirmed = await showWarningAlert(
+                "Confirm Import",
+                "Are you sure you want to import this subject file?"
+            );
+
+            if (!confirmed) return;
+
+            let formData = new FormData(this);
+
+            // --- Disable button during upload ---
+            importBtn.prop("disabled", true).text("Importing...");
+
+            $.ajax({
+                url: "/subject/import",
+                method: "POST",
+                data: formData,
+                contentType: false,
+                processData: false,
+
+                success: function (res) {
+                    const { success_count, failed_count, failed_items } = res;
+
+                    let msg = `${success_count} imported successfully.\n${failed_count} failed.`;
+
+                    if (failed_count > 0) {
+                        msg += "<br><br>Failed list:<br>";
+                        failed_items.forEach(item => {
+                            msg += `- ${item}<br>`;
+                        });
+                    }
+
+                    showSuccessAlert("Import Completed", msg, "/subject/list");
+
+                    importBtn.prop("disabled", false).text("Import");
+                },
+
+                error: function (xhr) {
+
+                    let msg = "Unable to import subject file."; // default
+
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+
+                    showErrorAlert("Error", msg);
+                    importBtn.prop("disabled", false).text("Import");
+                }
+
+            });
+
+        });
+
+    });
+    
+    function downloadFile(filename) {
+        const a = document.createElement("a");
+        a.href = `/subject/data/${filename}`;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    }
+</script>
+
+{% endblock %}

@@ -1,0 +1,384 @@
+{% extends "_admin_base.html" %}
+
+{% block head %}
+<style>
+    /* 🧭 Layout */
+    .chat-container {
+        display: flex;
+        height: 80vh;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    /* Left pane (chat list) */
+    .chat-list {
+        width: 35%;
+        border-right: 1px solid #eee;
+        overflow-y: auto;
+        background: #f9f9f9;
+    }
+
+    .chat-list-item {
+        padding: 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+        transition: background 0.2s;
+    }
+
+    .chat-list-item:hover,
+    .chat-list-item.active {
+        background: #e6f0ff;
+    }
+
+    .chat-list-item .name {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .chat-list-item .preview {
+        color: #777;
+        font-size: 0.9em;
+    }
+
+    /* Right pane (messages) */
+    .chat-room {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-header {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        font-weight: bold;
+        background: #fafafa;
+    }
+
+    .chat-messages {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        background: #fdfdfd;
+    }
+
+    /* Message containers for alignment */
+    .message-container {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 6px;
+    }
+
+    .message-container.sent {
+        align-items: flex-end;
+    }
+
+    .message-container.received {
+        align-items: flex-start;
+    }
+
+    /* Message bubble */
+    .message {
+        display: inline-block;
+        max-width: 50%;
+        padding: 8px 12px;
+        border-radius: 12px;
+        font-size: 0.95em;
+        word-break: break-word;
+        white-space: normal;
+    }
+
+    .message.sent {
+        background: #007bff;
+        color: white;
+    }
+
+    .message.received {
+        background: #e8e8e8;
+        color: #333;
+    }
+
+    /* Timestamp */
+    .timestamp {
+        font-size: 0.7em;
+        opacity: 0.6;
+        margin-top: 2px;
+    }
+
+    .timestamp.sent {
+        text-align: right;
+    }
+
+    .timestamp.received {
+        text-align: left;
+    }
+
+    .chat-input-area {
+        display: flex;
+        border-top: 1px solid #eee;
+        padding: 10px;
+    }
+
+    .chat-input-area textarea {
+        flex: 1;
+        resize: none;
+        border-radius: 8px;
+        padding: 8px;
+    }
+
+    .chat-input-area button {
+        margin-left: 10px;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+
+    <!-- 🧭 Left: Chat List -->
+    <div class="chat-list" id="chat-list">
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #ddd;">
+            <h5 style="margin: 0;">Chats</h5>
+            <button id="new-chat-btn" class="uk-button uk-button-primary uk-button-small" uk-tooltip="Start New Chat">
+                <i class="fa fa-plus"></i>
+            </button>
+        </div>
+
+        {% for room in chat_rooms %}
+        <div class="chat-list-item {% if loop.first %}active{% endif %}" data-room-id="{{ room.chat_room_id }}">
+            <div class="name">
+                {{ room.room_name }}
+                {% if room.unread_count > 0 %}
+                <span class="uk-badge uk-margin-small-left" style="background-color:#ff5b5b;">
+                    {{ room.unread_count }}
+                </span>
+                {% endif %}
+            </div>
+            <div class="preview">{{ room.last_message or 'No messages yet' }}</div>
+            <small class="uk-text-muted">{{ room.last_time }}</small>
+        </div>
+
+        {% endfor %}
+    </div>
+
+    <!-- 🧭 Right: Chat Room -->
+    <div class="chat-room">
+        <!-- Chat Header -->
+        <div class="chat-header" id="chat-room-header">Select a chat to start messaging</div>
+
+        <!-- Chat Messages -->
+        <div class="chat-messages" id="chat-messages">
+            <div class="uk-text-center uk-text-muted" style="margin-top: 20px;">No chat selected.</div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="chat-input-area">
+            <textarea id="message-input" class="uk-textarea" rows="1" placeholder="Type a message..."></textarea>
+            <button id="send-message" class="uk-button uk-button-primary">
+                <i class="fa fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 🧭 New Chat Modal -->
+    <div id="new-chat-modal" uk-modal>
+        <div class="uk-modal-dialog uk-modal-body">
+            <h3 class="uk-modal-title">Start a New Chat</h3>
+            <input id="search-user" class="uk-input" type="text" placeholder="Search parent name...">
+            <ul id="search-results" class="uk-list uk-list-divider" style="margin-top: 10px;"></ul>
+            <div class="uk-text-right">
+                <button class="uk-button uk-button-default uk-modal-close" type="button">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let openRoom = {{ open_room if open_room is not none else 'null' }};
+
+
+    // 转成数字或 null
+    if (openRoom !== null) {
+        openRoom = Number(openRoom);
+        if (isNaN(openRoom)) openRoom = null;
+    }
+
+    $(document).ready(function () {
+
+        const currentUserId = {{ current_user_id }};
+        let activeRoomId = null;
+
+        // 如果是通过通知点进来 → 自动打开对应聊天室
+        if (openRoom) {
+            const roomItem = $(`.chat-list-item[data-room-id="${openRoom}"]`);
+
+            if (roomItem.length) {
+                setTimeout(() => {
+                    roomItem.trigger("click");
+                }, 50);
+            }
+        } else {
+            // 否则自动打开第一个
+            const firstChat = $('.chat-list-item.active');
+            if (firstChat.length) {
+                const firstRoomId = firstChat.data('room-id');
+                if (firstRoomId) loadChatRoom(firstRoomId, firstChat.find('.name').text());
+            }
+        }
+
+    // Switch chat rooms
+    $('#chat-list').on('click', '.chat-list-item', function () {
+        $('.chat-list-item').removeClass('active');
+        $(this).addClass('active');
+        const roomId = $(this).data('room-id');
+        const name = $(this).find('.name').text();
+        window.activeRoomId = roomId;
+        loadChatRoom(roomId, name);
+    });
+
+    function loadChatRoom(roomId, name) {
+        activeRoomId = roomId;
+        window.activeRoomId = roomId;
+        $('#chat-room-header').text(name);
+        $('#chat-messages').html('<div class="uk-text-center uk-text-muted">Loading messages...</div>');
+
+        $.getJSON(`/chat/messages?room_id=${roomId}`, function (res) {
+            if (res.status === 'success') {
+                renderMessages(res.messages);
+                scrollToBottom();
+
+                // Reset unread badge
+                const roomItem = $(`.chat-list-item[data-room-id="${roomId}"]`);
+                roomItem.find('.uk-badge').remove();
+            } else {
+                $('#chat-messages').html('<div class="uk-text-center uk-text-danger">Failed to load messages.</div>');
+            }
+        });
+    }
+
+
+    function renderMessages(messages) {
+        const container = $('#chat-messages');
+        container.empty();
+
+        if (!messages.length) {
+            container.html('<div class="uk-text-center uk-text-muted" style="margin-top:20px;">No messages yet. Start the conversation!</div>');
+            return;
+        }
+
+        messages.forEach(msg => {
+            const isSent = msg.sender_id === currentUserId;
+            const msgHtml = $(`
+                <div class="message-container ${isSent ? 'sent' : 'received'}">
+                    <div class="message ${isSent ? 'sent' : 'received'}">${escapeHtml(msg.content)}</div>
+                    <div class="timestamp ${isSent ? 'sent' : 'received'}">${msg.send_datetime}</div>
+                </div>
+            `);
+            container.append(msgHtml);
+        });
+    }
+
+    function escapeHtml(text) { return $('<div>').text(text).html(); }
+    function scrollToBottom() { $('#chat-messages').scrollTop($('#chat-messages')[0].scrollHeight); }
+
+    // Send message
+    $('#send-message').on('click', sendMessage);
+    $('#message-input').on('keypress', function (e) {
+        if (e.which === 13 && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+
+    function sendMessage() {
+        const content = $('#message-input').val().trim();
+        if (!content || !activeRoomId) {
+            UIkit.notification({ message: 'Please select a chat and type a message.', status: 'warning' });
+            return;
+        }
+
+        $.ajax({
+            url: '/chat/send',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ room_id: activeRoomId, content }),
+            success: function (res) {
+                if (res.status === 'success') {
+                    const msg = res.data;
+                    $('#chat-messages').append($(`
+                        <div class="message-container sent">
+                            <div class="message sent">${escapeHtml(msg.content)}</div>
+                            <div class="timestamp sent">${msg.send_datetime}</div>
+                        </div>
+                    `));
+                    $('#message-input').val('');
+                    scrollToBottom();
+                } else {
+                    UIkit.notification({ message: res.message, status: 'danger' });
+                }
+            },
+            error: function () { UIkit.notification({ message: 'Failed to send message.', status: 'danger' }); }
+        });
+    }
+
+    // New chat modal
+    $('#new-chat-btn').on('click', function () {
+        UIkit.modal('#new-chat-modal').show();
+        $('#search-user').val('');
+        $('#search-results').empty();
+    });
+
+    $('#search-user').on('input', function () {
+        const query = $(this).val().trim();
+        if (query.length < 2) { $('#search-results').empty(); return; }
+
+        $.getJSON(`/chat/search_user?query=${encodeURIComponent(query)}`, function (res) {
+            if (res.status === 'success' && res.data.length) {
+                const results = res.data.map(u => `
+                    <li><a href="#" class="start-chat" data-user-id="${u.user_id}" data-name="${u.name}">
+                        <i class="fa fa-user"></i> ${u.name}</a></li>
+                `);
+                $('#search-results').html(results.join(''));
+            } else {
+                $('#search-results').html('<li class="uk-text-danger">No users found.</li>');
+            }
+        });
+    });
+
+    $('#search-results').on('click', '.start-chat', function (e) {
+        e.preventDefault();
+        const userId = $(this).data('user-id');
+        const name = $(this).data('name');
+
+        $.ajax({
+            url: '/chat/start',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ user_id: userId }),
+            success: function (res) {
+                if (res.status === 'success') {
+                    UIkit.modal('#new-chat-modal').hide();
+                    if (!$(`.chat-list-item[data-room-id="${res.data.room_id}"]`).length) {
+                        $('#chat-list').append(`
+                            <div class="chat-list-item" data-room-id="${res.data.room_id}">
+                                <div class="name">${name}</div>
+                                <div class="preview">No messages yet</div>
+                                <small class="uk-text-muted">${res.data.created_time}</small>
+                            </div>
+                        `);
+                    }
+                    $('.chat-list-item').removeClass('active');
+                    const newChat = $(`.chat-list-item[data-room-id="${res.data.room_id}"]`);
+                    newChat.addClass('active');
+                    loadChatRoom(res.data.room_id, name);
+                } else {
+                    UIkit.notification({ message: res.message, status: 'danger' });
+                }
+            },
+            error: function () { UIkit.notification({ message: 'Failed to create chat.', status: 'danger' }); }
+        });
+    });
+});
+</script>
+{% endblock %}

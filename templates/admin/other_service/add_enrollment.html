@@ -1,0 +1,83 @@
+{% extends "_admin_base.html" %}
+
+{% block head %}
+<script src="{{ url_for('static', filename='js/general/other_service/enrollment_add.js') }}"></script>
+
+{% endblock %}
+
+{% block content %}
+<form method="post" action="" id="service-enrollment-form" data-mode="add">
+    <div class="container">
+        <div class="columns">
+            <!-- con2 -->
+            <div class="formformat column col-6 col-sm-12 card my-single-card">
+                <div class="card-header">
+                    <div class="card-title h5">
+                        <!-- Back Button -->
+                        <button class="topleft-back" type="button" data-get="/service/enrollment/list"
+                            uk-tooltip="title: Back to Previous Section; pos: top-left;"><i
+                                class="fa-solid fa-arrow-left"></i></button> &nbsp;
+                        <!-- Page Title -->
+                        Add Service Enrollment
+                    </div>
+                </div>
+
+                <div class="card-body my-pagecard-body">
+                    <!-- Student -->
+                    <div class="form-group">
+                        <label class="form-label" for="student_id">Student: </label>
+                        <select class="form-select student_id select2" name="student_id" {% if not students %}disabled{%
+                            endif %}>
+                            <option value="" disabled selected>Select Student</option>
+                            {% for student in students %}
+                            <option value="{{ student.student_id }}">
+                                {{ student.user.name }} ({{ student.user.email }}) - {{ student.education_level.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="error-message"></span>
+                    </div>
+
+
+                    <!-- Service Type -->
+                    <div class="form-group">
+                        <label class="form-label" for="service_type">Service Type: </label>
+                        <select class="form-select select2 service_type" name="service_type">
+                            <option value="" disabled selected>Select Service Type</option>
+                            <option value="1">Daycare</option>
+                            <option value="2">Transport</option>
+                            <option value="3">Other</option>
+                        </select>
+                        <span class="error-message"></span>
+                    </div>
+
+
+                    <!-- Service -->
+                    <div class="form-group">
+                        <label class="form-label" for="service_id">Service: </label>
+                        <select id="class" name="service_id[]" class="form-select select2 service_id" multiple disabled>
+                            <!-- Options will be appended via AJAX -->
+                        </select>
+                        <span class="error-message"></span>
+                    </div>
+
+                    <!-- Address -->
+                    <div class="form-group">
+                        <label class="form-label" for="address">Address: </label>
+                        <textarea class="form-input address" type="text" name="address" placeholder="Desctiption"
+                            disabled></textarea>
+                        <span class="error-message"></span>
+                    </div>
+
+
+                    <!-- Buttons -->
+                    <div class="text-right" style="padding-top:16px;">
+                        <button type="reset" class="btn btn-secondary">Reset</button>
+                        <button type="submit" class="btn btn-primary" disabled>Add</button>
+                    </div>
+                </div>
+            </div> <!--end left-side -->
+        </div>
+    </div>
+</form>
+{% endblock %}

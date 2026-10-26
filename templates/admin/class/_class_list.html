@@ -1,0 +1,65 @@
+<div class="card-left-tb">
+    {{ current_count }} of {{ total_count }} record(s) &nbsp;&nbsp;| &nbsp;
+    Page {{ page }} of {{ page_count }}
+</div>
+
+<table class="admin-table1">
+    <thead>
+        <tr>
+            {% for f in fields %}
+            {% set field = f.name %}
+            {% set label = f.label %}
+            {% set dir_toggle = 'asc' if sort != field or dir == 'desc' else 'desc' %}
+            {% set icon = '↑' if sort == field and dir == 'asc' else '↓' if sort == field else '' %}
+            <th class="table_headers">
+                <a href="?subject_name={{ subject_name or '' }}&status={{ status or '' }}&sort={{ field }}&dir={{ dir_toggle }}&per_page={{ per_page }}&page={{ page }}"
+                    class="sort-link {{ 'sorted' if sort == field else '' }}" data-sort="{{ field }}">
+                    {{ label }} <span>{{ icon }}</span>
+                </a>
+            </th>
+            {% endfor %}
+            <th class="table_headers">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for class in classes %}
+        <tr>
+            <td>CL{{ "%04d" % class.class_id }}</td>
+            <td>{{ class.subject.name }}</td>
+            <td>{{ class.tutor.user.name }}</td>
+            <td>{{ class.time_per_week }}</td>
+            <td>{{ class.class_type }}</td>
+            <td>
+                <button class="uk-button uk-button-default uk-button-small pastel-edit-btn"
+                    data-get="/class/detail/{{ class.class_id }}" uk-tooltip="View / Edit This Details">
+                    <span uk-icon="pencil" class="uk-icon"></span> <span class="button-text">Edit</span>
+                </button>
+
+                {% if class.status == '1' %}
+                <button
+                    class="status-btn uk-button uk-button-danger pastel-deactivate-btn deactivate-btn btn-deactivate uk-button-small equal-width-btn"
+                    data-id="{{ class.class_id }}" data-action="deactivate" uk-tooltip="Deactivate This">
+                    <span uk-icon="ban" class="uk-icon"></span>
+                    <span class="button-text">Deactivate</span>
+                </button>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6">No class found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Pagination -->
+<nav class="admin-pager">
+    {% if pagination.total_pages > 1 %}
+    {{ pagination.links|safe }}
+    {% else %}
+    <ul class="pagination">
+        <li class="page-item active"><span class="page-link">1</span></li>
+    </ul>
+    {% endif %}
+</nav>

@@ -1,0 +1,111 @@
+{% extends "_admin_base.html" %}
+
+{% block head %}
+<script src="{{ url_for('static', filename='js/general/other_service/service_add.js') }}"></script>
+
+{% endblock %}
+
+{% block content %}
+<form method="post" action="" id="service-form" data-mode="edit">
+    <div class="container card my-pagecard">
+        <div class="columns">
+            <!-- con2 -->
+            <!-- left-side -->
+            <div class="formformat column col-6 col-sm-12">
+                <div class="card-header">
+                    <div class="card-title h5">
+                        <!-- Back Button -->
+                        <button class="topleft-back" type="button" onclick="back()"
+                            uk-tooltip="title: Back to Previous Section; pos: top-left;"><i
+                                class="fa-solid fa-arrow-left"></i></button> &nbsp;
+                        <!-- Page Title -->
+                        Other Service OS{{ "%04d" % service.service_id }}
+                    </div>
+                </div>
+
+                <div class="card-body my-pagecard-body">
+                    <input type="hidden" name="service_id" value="{{ service.service_id }}">
+
+                    <!-- Service Name -->
+                    <div class="form-group">
+                        <label class="form-label" for="name">Service Name: </label>
+                        <input class="form-input name" type="text" name="name" placeholder="Name"
+                            value="{{ service.name }}">
+                        <span class="error-message"></span>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="form-group">
+                        <label class="form-label" for="description">Description: </label>
+                        <textarea class="form-input description" type="text" name="description"
+                            placeholder="Desctiption">{{ service.description }}</textarea>
+                        <span class="error-message"></span>
+                    </div>
+
+                    <!-- Service Type -->
+                    <div class="form-group">
+                        <label class="form-label" for="service_type">Service Type: </label>
+                        <select class="form-select select2 service_type" name="service_type">
+                            <option value="" disabled selected>Select Service Type</option>
+                            <option value="1" {% if service.service_type=='1' %}selected{% endif %}>Daycare</option>
+                            <option value="2" {% if service.service_type=='2' %}selected{% endif %}>Transport</option>
+                            <option value="3" {% if service.service_type=='3' %}selected{% endif %}>Other</option>
+
+                        </select>
+                        <span class="error-message"></span>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="text-right" style="padding-top:16px;">
+                        <button type="reset" class="btn btn-secondary">Reset</button>
+                        <button type="submit" id="" class="btn btn-primary" disabled>Update</button>
+                    </div>
+                </div> <!--end left-side -->
+            </div>
+
+            <div class="formformat-right column col-6 col-sm-12 ">
+                <div class="card-body my-pagecard-body">
+                    <!-- Fee Type -->
+                    <div class="form-group">
+                        <label class="form-label" for="fee_type">Fee Type: </label>
+                        <select class="form-select select2  fee_type" name="fee_type">
+                            <option value="" disabled selected>Select Fee Type</option>
+                            <option value="1" {% if service.fee_type=='1' %}selected{% endif %}>Pay Direct</option>
+                            <option value="2" {% if service.fee_type=='2' %}selected{% endif %}>Deposit & Per Attendance
+                            </option>
+
+                        </select>
+                        <span class="error-message"></span>
+                    </div>
+
+                    <!-- Deposit Fee -->
+                    <div class="form-group">
+                        <label class="form-label" for="deposit_fee">Deposit Fee (RM): </label>
+                        <input class="form-input deposit_fee" type="number" name="deposit_fee" min="0" max="9999.99"
+                            step="0.01" placeholder="0.00" value="{{ service.deposit_fee }}">
+                        <span class="error-message"></span>
+                    </div>
+
+                    <!-- Fee Per Month -->
+                    <div class="form-group">
+                        <label class="form-label" for="fee_per_month">Fee Per Month (RM): </label>
+                        <input class="form-input fee_per_month" type="number" name="fee_per_month" min="0" max="9999.99"
+                            step="0.01" placeholder="0.00" value="{{ service.service_fee_per_month }}">
+                        <span class="error-message"></span>
+                    </div>
+
+                    <!-- Fee Per Attendance -->
+                    <div class="form-group">
+                        <label class="form-label" for="fee_per_att">Fee Per Attendance (RM): </label>
+                        <input class="form-input fee_per_att" type="number" name="fee_per_att" min="0" max="9999.99"
+                            step="0.01" placeholder="0.00" value="{{ service.service_fee_per_attend }}">
+                        <span class="error-message"></span>
+                    </div>
+                </div>
+            </div>
+            <!--end right-side -->
+        </div>
+    </div>
+    </div>
+</form>
+{% endblock %}

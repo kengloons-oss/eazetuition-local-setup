@@ -1,0 +1,219 @@
+{% extends "_admin_base.html" %}
+
+{% block head %}
+<!-- Include Flatpickr CSS and JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="{{ url_for('static', filename='js/general/schedule_package/package_edit.js') }}"></script>
+
+{% endblock %}
+
+{% block content %}
+<form method="post" action="" id="package-edit--form" data-mode="add">
+    <div class="container card my-pagecard">
+        <div class="columns">
+            <!-- con2 -->
+            <!-- left-side -->
+            <div class="formformat column col-5 col-sm-12">
+                <div class="card-header">
+                    <div class="card-title h5">
+                        <!-- Back Button -->
+                        <button class="topleft-back" type="button" data-get="/schedule_package/list"
+                            uk-tooltip="title: Back to Previous Section; pos: top-left;"><i
+                                class="fa-solid fa-arrow-left"></i></button> &nbsp;
+                        <!-- Page Title -->
+                        Schedule Package SP{{ "%04d" % package.package_id }}
+                    </div>
+                </div>
+
+                <div class="card-body my-pagecard-body">
+                    <!-- Package Id -->
+                    <input type="hidden" name="package_id" value="{{ package.package_id }}">
+
+                    <!-- Package Name -->
+                    <div class="form-group">
+                        <label class="form-label" for="name">Name: </label>
+                        <div class="fake-input">{{ package.name }}</div>
+                    </div>
+
+                    <!-- Education Level -->
+                    <div class="form-group">
+                        <label class="form-label" for="edu_lvl_id">Education Level: </label>
+                        <div class="fake-input">
+                            {% if package.package_sets %}
+                            {% set first_set = package.package_sets[0] %}
+                            {% if first_set.details %}
+                            {% set first_detail = first_set.details[0] %}
+                            {% if first_detail.class_detail and first_detail.class_detail.class_ and
+                            first_detail.class_detail.class_.subject and
+                            first_detail.class_detail.class_.subject.education_level %}
+                            {{ first_detail.class_detail.class_.subject.education_level.name }}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </div>
+                    </div>
+
+
+                    <div class="uk-grid">
+                        <div class="uk-width-1-3">
+                            <!-- Is Open for Enrollment Toggle -->
+                            <div class="form-group">
+                                <label class="form-label" for="is_open_for_enrollment">Registration Status: </label>
+                                {% if package.status == '1' %}
+
+
+                                <div class="uk-flex uk-flex-middle">
+                                    <label class="uk-switch">
+                                        <input type="checkbox" id="is_open_for_enrollment" name="is_open_for_enrollment"
+                                            value="1" {{ 'checked' if package.is_open_for_enrollment=='1' else '' }}>
+                                        <div class="uk-switch-slider"></div>
+                                    </label>
+                                    <label class="uk-margin-small-left">Open</label>
+                                </div>
+                                {% else %}
+
+                                <div class="fake-input">
+                                    {{Helper.format_open_for_enrollment(package.is_open_for_enrollment) }}</div>
+
+                                {% endif %}
+                            </div>
+
+
+                        </div>
+
+                        <div class="uk-width-expand" style="padding-left: 20px;">
+                            <!-- Intake Year -->
+                            <div class="form-group">
+                                <label class="form-label" for="intake_year">Intake Year: </label>
+                                <div class="fake-input">{{ package.year }}</div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="text-right" style="padding-top:16px;">
+                        <button type="button" class="btn btn-secondary" id="resetBtn">Reset</button>
+                        <button type="submit" class="btn btn-primary" disabled>Update</button>
+                    </div>
+                </div>
+            </div><!-- end left-side -->
+
+            <!-- strart right-side -->
+            <div class="formformat-right column col-7 col-sm-12 ">
+                <div class="card-body my-pagecard-body">
+                    <!-- ========================= -->
+                    <!-- Display Package Sets -->
+                    <!-- ========================= -->
+                    <div id="generatedPackages" class="uk-grid-small uk-child-width-1-2@m uk-grid-match">
+                        {% set day_map = {'1':'Mon','2':'Tue','3':'Wed','4':'Thu','5':'Fri','6':'Sat','7':'Sun'} %}
+                        {% for idx, set in enumerate(package.package_sets) %}
+                        <div class="package-card uk-card uk-card-default uk-card-body uk-margin-small-bottom">
+                            <div class="uk-flex uk-flex-middle uk-flex-between toggle-header" style="cursor:pointer;">
+                                <div class="uk-flex uk-flex-middle">
+                                    <span>{{ set.name }}</span>
+                                </div>
+                                <span class="toggle-icon" style="font-size:1rem; color:#333;">
+                                    {{ idx < 2 and '▼' or '▶' }} </span>
+                            </div>
+
+                            <div id="pkg_content_{{ idx }}" class="pkg-content" {% if idx>= 2 %}style="display:none;"{%
+                                endif %}>
+                                <table class="uk-table uk-table-divider uk-table-small">
+                                    <thead>
+                                        <tr>
+                                            <th>Day</th>
+                                            <th>Subject</th>
+                                            <th>Time</th>
+                                            <th>Tutor</th>
+                                            <th>Room</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% set all_classes = [] %}
+                                        {% for detail in set.details %}
+                                        {% if detail.class_detail %}
+                                        {% set cls = detail.class_detail.class_ %}
+                                        {% if cls %}
+                                        {% set subject_name = cls.subject.name if cls.subject else 'N/A' %}
+                                        {% set tutor_name = cls.tutor.user.name if cls.tutor and cls.tutor.user else
+                                        'N/A' %}
+                                        {% set room_name = detail.room.name if detail.room else 'N/A' %}
+                                        {% set day_of_week = detail.class_detail.day_of_week %}
+                                        {% set start_time = detail.class_detail.start_time.strftime('%H:%M') if
+                                        detail.class_detail.start_time else ''
+                                        %}
+                                        {% set end_time = detail.class_detail.end_time.strftime('%H:%M') if
+                                        detail.class_detail.end_time else '' %}
+                                        {% set _ = all_classes.append({
+                                        'subject_name': subject_name,
+                                        'day_of_week': day_of_week,
+                                        'start_time': start_time,
+                                        'end_time': end_time,
+                                        'tutor_name': tutor_name,
+                                        'room_name': room_name,
+                                        'class_id': cls.class_id
+                                        }) %}
+                                        {% endif %}
+                                        {% endif %}
+                                        {% endfor %}
+
+                                        {% if all_classes|length == 0 %}
+                                        <tr>
+                                            <td colspan="5" class="uk-text-center uk-text-danger">
+                                                ⚠️ This package has no available classes.
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        {% set sorted_classes = all_classes|sort(attribute='day_of_week') %}
+                                        {% set day_groups = {} %}
+                                        {% for cls in sorted_classes %}
+                                        {% set day_groups = day_groups.update({cls.day_of_week:
+                                        (day_groups.get(cls.day_of_week, []) + [cls])}) or day_groups %}
+                                        {% endfor %}
+
+                                        {% for day, group in day_groups.items() %}
+                                        {% for i, cls in enumerate(group) %}
+                                        <tr {% if i==0 %}style="border-top: 1.5px solid #333;" {% endif %}>
+                                            {% if i == 0 %}
+                                            <td rowspan="{{ group|length }}" class="day-cell"
+                                                style="vertical-align: middle; text-align: center;">
+                                                {{ day_map[cls.day_of_week] }}
+                                            </td>
+                                            {% endif %}
+                                            <td>{{ cls.subject_name }}</td>
+                                            <td>
+                                                {% if cls.class_id %}
+                                                <a href="{{ url_for('class.edit_class', id=cls.class_id) }}"
+                                                    class="time-link">
+                                                    {{ cls.start_time }} - {{ cls.end_time }}
+                                                </a>
+                                                {% else %}
+                                                {{ cls.start_time }} - {{ cls.end_time }}
+                                                {% endif %}
+                                            </td>
+
+                                            <td>{{ cls.tutor_name }}</td>
+                                            <td>{{ cls.room_name }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                        {% endfor %}
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+</form>
+{% endblock %}

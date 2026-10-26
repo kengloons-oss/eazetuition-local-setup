@@ -1,0 +1,116 @@
+{% extends "_admin_base.html" %}
+
+{% block head %}
+<!-- Include Flatpickr CSS and JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="{{ url_for('static', filename='js/general/payment/payment_add.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<form method="post" action="" id="payment-form" data-mode="add">
+    <div class="container card my-pagecard">
+        <div class="columns">
+
+            <!-- LEFT SIDE -->
+            <div class="formformat column col-6 col-sm-12">
+                <div class="card-header">
+                    <div class="card-title h5">
+                        <button class="topleft-back" type="button" data-get="/payment/list"
+                            uk-tooltip="title: Back to Previous Section; pos: top-left;">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button> &nbsp;
+                        Make Payment
+                    </div>
+                </div>
+
+                <div class="card-body my-pagecard-body">
+
+                    <!-- Student -->
+                    <div class="form-group">
+                        <label class="form-label" for="student_id">Student: </label>
+                        {% if payment %}
+                            <div class="fake-input">{{ payment.student.user.name }} ({{ payment.student.user.email }})</div>
+                            <input type="hidden" name="student_id" value="{{ payment.student_id }}">
+                        {% else %}
+                            <select class="form-select select2 student_id" name="student_id">
+                                <option value="" disabled selected>Select Student</option>
+                                {% for student in students %}
+                                    <option value="{{ student['student_id'] }}">
+                                        {{ student['user']['name'] }} ({{ student['user']['email'] }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <span class="error-message"></span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Payment -->
+                    <div class="form-group">
+                        <label class="form-label" for="payment_id">Payment: </label>
+                        {% if payment %}
+                            <div class="fake-input">Payment #{{ payment.payment_id }}</div>
+                            <input type="hidden" name="payment_id" value="{{ payment.payment_id }}"
+                                   data-final_amt="{{ payment.final_amt }}"
+                                   data-discount_amt="{{ payment.discount_amt }}">
+                        {% else %}
+                            <select class="form-select select2 payment_id" name="payment_id"></select>
+                            <span class="error-message"></span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="form-group">
+                        <label class="form-label" for="payment_method">Payment Method: </label>
+                        <select class="form-select select2 payment_method" name="payment_method" disabled>
+                            <option value="" disabled selected>Select Payment Method</option>
+                            <option value="1">Cash</option>
+                            <option value="3">Touch'n Go / POS</option>
+                        </select>
+                        <span class="error-message"></span>
+                    </div>
+
+                    <!-- Received Amount -->
+                    <div class="form-group" id="received-group">
+                        <label class="form-label" for="received_amt">Received Amount (RM): </label>
+                        <input class="form-input received_amt" type="text" name="received_amt" placeholder="0.00"
+                               oninput="
+                                   this.value = this.value
+                                       .replace(/[^0-9.]/g, '')
+                                       .replace(/(\..*?)\..*/g, '$1');
+                                   if (this.value.includes('.')) {
+                                       const parts = this.value.split('.');
+                                       if (parts[1].length > 2) this.value = parts[0] + '.' + parts[1].slice(0, 2);
+                                   }
+                               ">
+                        <span class="error-message"></span>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="text-right" style="padding-top:16px;">
+                        <button type="button" class="btn btn-secondary" id="resetBtn">Reset</button>
+                        <button type="submit" class="btn btn-primary" disabled>Add</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT SIDE -->
+            <div class="formformat-right column col-6 col-sm-12">
+                <div class="card-body my-pagecard-body">
+
+                    <div class="form-group">
+                        <label class="form-label" for="payment_detail">Payment Details: </label>
+                    </div>
+
+                    <div id="payment_detail" class="uk-grid-small uk-child-width-1-2@m uk-grid-match" uk-grid
+                         style="display: none;">
+                        <!-- JS append payment details here -->
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</form>
+{% endblock %}

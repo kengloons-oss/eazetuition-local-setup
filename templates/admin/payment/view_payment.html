@@ -1,0 +1,184 @@
+{% extends "_admin_base.html" %}
+
+{% block head %}
+<!-- Include Flatpickr CSS and JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<!-- <script src="{{ url_for('static', filename='js/general/payment/payment_add.js') }}"></script> -->
+
+<style>
+
+</style>
+
+{% endblock %}
+
+{% block content %}
+<form method="post" action="" id="payment-form" data-mode="add">
+    <div class="container card my-pagecard">
+        <div class="columns">
+            <!-- con2 -->
+            <!-- left-side -->
+            <div class="formformat column col-6 col-sm-12">
+                <div class="card-header">
+                    <div class="card-title h5">
+                        <!-- Back Button -->
+                        <button class="topleft-back" type="button" data-get="/payment/list"
+                            uk-tooltip="title: Back to Previous Section; pos: top-left;"><i
+                                class="fa-solid fa-arrow-left"></i></button> &nbsp;
+                        <!-- Page Title -->
+                        Payment PM{{ "%04d" % payment.payment_id }}
+                    </div>
+                </div>
+
+                <div class="card-body my-pagecard-body">
+
+                    <!-- Student -->
+                    <div class="form-group">
+                        <label class="form-label" for="student_id">Student: </label>
+                        <div class="fake-input">{{ payment.student.user.name }} ({{ payment.student.user.email }})</div>
+                    </div>
+
+                    <div class="uk-grid">
+                        <div class="uk-width-1-2">
+                            <!-- Created Datetime -->
+                            <div class="form-group">
+                                <label class="form-label" for="created_at">Created Datetime: </label>
+                                <div class="fake-input">
+                                    {{ Helper.format_full_datetime_12h(payment.created_datetime) }}</div>
+                            </div>
+                        </div>
+
+                        <div class="uk-width-expand" style="padding-left: 20px;">
+                            <!-- Payment Datetime -->
+                            <div class="form-group">
+                                <label class="form-label" for="payment_datetime">Payment Datetime: </label>
+                                <div class="fake-input">
+                                    {{ Helper.format_full_datetime_12h(payment.payment_datetime) if
+                                    payment.payment_status == '1' else '-' }}
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {% if payment.payment_status == '1' %}
+                    <!-- Payment Method -->
+                    <div class="form-group">
+                        <label class="form-label" for="payment_method">Payment Method: </label>
+                        <div class="fake-input">{{ Helper.format_payment_method(payment.payment_method) }}</div>
+                    </div>
+
+                    <!-- Received Amount -->
+                    <div class="form-group" id="received-group">
+                        <label class="form-label" for="received_amt">Received Amount (RM): </label>
+                        <div class="fake-input">{{ payment.received_amt }}</div>
+                    </div>
+                    {% else %}
+
+                    <!-- Payment Method -->
+                    <div class="form-group">
+                        <label class="form-label" for="payment_method">Payment Method: </label>
+                        <div class="fake-input">None</div>
+                    </div>
+
+                    <!-- Received Amount -->
+                    <div class="form-group" id="received-group">
+                        <label class="form-label" for="received_amt">Received Amount (RM): </label>
+                        <div class="fake-input">0.00</div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="text-right" style="padding-top:16px;">
+                        <div class="text-right" style="padding-top:16px;">
+                            <a href="{{ url_for('payment.add_payment', payment_id=payment.payment_id) }}"
+                                class="btn btn-primary">
+                                Go to Make Payment
+                            </a>
+                        </div>
+
+                    </div>
+
+                    {% endif %}
+
+
+                </div>
+            </div><!-- end left-side -->
+
+            <!-- strart right-side -->
+            <div class="formformat-right column col-6 col-sm-12 ">
+                <div class="card-body my-pagecard-body">
+
+                    <div class="form-group">
+                        <label class="form-label" for="payment_detail">Payment Details: </label>
+                    </div>
+
+                    <div id="payment_detail" class="uk-grid-small uk-child-width-1-2@m uk-grid-match" uk-grid>
+                        {% if payment.details %}
+                        <div class="receipt">
+                            <table class="receipt-table">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th>Amount (RM)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for detail in payment.details %}
+                                    <tr>
+                                        <td>
+                                            {% if detail.class_name %}
+                                            {{ detail.class_name }}
+                                            {% else %}
+                                            {{ detail.service_name }}
+                                            {% if detail.fee_type == '2' %}
+                                            (Deposit)
+                                            {% elif detail.fee_type == '3' and detail.service_attend_time %}
+                                            (x {{ detail.service_attend_time }})
+                                            {% endif %}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ "{:.2f}".format(detail.class_fee or detail.service_fee or
+                                            detail.material_fee or 0) }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+
+                                    <!-- =============================== -->
+                                    <!-- Summary Row (Total Payment) -->
+                                    <!-- =============================== -->
+
+                                    <tr class="receipt-divider">
+                                        <td colspan="2"></td>
+                                    </tr>
+                                    <tr class="receipt-summary-row">
+                                        <td>Subtotal</td>
+                                        <td>{{ payment.final_amt + payment.discount_amt }}</td>
+                                    </tr>
+                                    <tr class="receipt-summary-row">
+                                        <td>Discount</td>
+                                        <td>- {{ payment.discount_amt }}</td>
+                                    </tr>
+                                    <tr class="receipt-total-row">
+                                        <td><strong>Total Payable</strong></td>
+                                        <td class="final-amount"><strong>{{ payment.final_amt }}</strong></td>
+                                    </tr>
+                                    <tr class="receipt-divider">
+                                        <td colspan="2"></td>
+                                    </tr>
+                                    <tr class="receipt-summary-row receipt-change-row">
+                                        <td>Changed Amount</td>
+                                        <td class="change-amount">{{ payment.change_amt }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

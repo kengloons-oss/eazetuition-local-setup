@@ -1,0 +1,211 @@
+{% extends "_admin_base.html" %}
+{% block content %}
+<!-- Filters -->
+<form id="filterForm">
+    <div class="container-filter ">
+        <div class="half">
+            <div class="card card-blue-shadow">
+                <div class="card-txtfield card-body ">
+                    <label for="status">Status: </label>
+                    <select name="status" class="form-select">
+                        <option value="">All</option>
+                        <option value="1" selected>Active</option>
+                        <option value="0">Inactive</option>
+                    </select>
+
+                    <label for="service_type">Service Type: </label>
+                    <select name="service_type" id="service_type" class="form-select select2">
+                        <option value="">All</option>
+                        <option value="1">Daycare</option>
+                        <option value="2">Transport</option>
+                        <option value="3">Other</option>
+                    </select>
+
+                    <label for="fee_type">Fee Type: </label>
+                    <select name="fee_type" id="fee_type" class="form-select select2">
+                        <option value="">All</option>
+                        <option value="1">Pay Direct</option>
+                        <option value="2">Deposit & Attendance</option>
+                    </select>
+
+                    <label for="fee_per_month">Fee Per Month (RM): </label>
+                    <div class="uk-flex uk-flex-between uk-flex-middle uk-width-1-1">
+                        <div class="uk-width-expand">
+                            <input type="text" id="fee_per_month_min" name="fee_per_month_min"
+                                placeholder="Min fee per month" class="uk-width-1-1"
+                                uk-tooltip="title: Min fee for filter fee per month; pos: top-left;">
+                        </div>
+                        <div class="uk-margin-small-left uk-margin-small-right uk-flex uk-flex-middle">
+                            -
+                        </div>
+                        <div class="uk-width-expand">
+                            <input type="text" id="fee_per_month_max" name="fee_per_month_max"
+                                placeholder="Max fee per month" class="uk-width-1-1"
+                                uk-tooltip="title: Max fee for filter fee per month; pos: top-left;">
+                        </div>
+                    </div>
+
+                    <label for="fee_per_month">Fee Per Att. (RM): </label>
+                    <div class="uk-flex uk-flex-between uk-flex-middle uk-width-1-1">
+                        <div class="uk-width-expand">
+                            <input type="text" id="fee_per_att_min" name="fee_per_att_min"
+                                placeholder="Min fee per attendance" class="uk-width-1-1"
+                                uk-tooltip="title: Min fee for filter fee per attendance; pos: top-left;">
+                        </div>
+                        <div class="uk-margin-small-left uk-margin-small-right uk-flex uk-flex-middle">
+                            -
+                        </div>
+                        <div class="uk-width-expand">
+                            <input type="text" id="fee_per_att_max" name="fee_per_att_max"
+                                placeholder="Max fee per attendance" class="uk-width-1-1"
+                                uk-tooltip="title: Max fee for filter fee per attendance; pos: top-left;">
+                        </div>
+                    </div>
+
+                    <label for="filter_pageitems">Item Per Page: </label>
+                    <select name="per_page" id="per_page" class="form-select">
+                        <option value="7" {% if per_page==7 %}selected{% endif %}>7</option>
+                        <option value="10" {% if per_page==10 %}selected{% endif %}>10</option>
+                        <option value="20" {% if per_page==20 %}selected{% endif %}>20</option>
+                    </select>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card-button-right">
+        <button data-get="/service/add" id="b_create">Create New Service</button>
+    </div>
+
+    <div class="search-container card-right-tb">
+        <div class="search-bar">
+            <input type="search" name="search_service_name" placeholder="Search Service Name..." id="search"
+                class="search-input">
+            <button id="search-button" type="button"><i class="fas fa-search"></i></button>
+        </div>
+    </div>
+</form>
+
+<!-- Other Service Table -->
+<div id="serviceTable">
+    {% include '/admin/other_service/_service_list.html' %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentSort = '{{ sort or "class_id" }}';
+    let currentDir = '{{ dir or "asc" }}';
+    let currentPage = 1;
+
+    function loadTable(params = {}) {
+        if (currentSort) {
+            params.sort = currentSort;
+            params.dir = currentDir;
+        }
+
+        params.page = currentPage;
+
+        $.get("/service/list", params, function (data) {
+            // If no class found, reset page to 1 and re-fetch
+            if ($(data).find('tbody tr').length === 1 && $(data).find('tbody td').text().includes('No Service found')) {
+                currentPage = 1;
+                params.page = 1;
+                $.get("/service/list", params, function (newData) {
+                    $('#serviceTable').html(newData);
+                    bindStatusButtonEvents();
+                });
+            } else {
+                $('#serviceTable').html(data);
+                bindStatusButtonEvents();
+            }
+        });
+    }
+
+
+    function bindStatusButtonEvents() {
+        $('.status-btn').off('click').on('click', function () {
+            const btn = $(this);
+            const id = btn.data('id');
+            const action = btn.data('action');
+            const formattedId = `OS${id.toString().padStart(4, '0')}`;
+
+            showWarningAlert('Please Confirm', `Are you sure you want to ${action} Service ${formattedId}? <br/><br/> <small><strong>⚠️ Note:</strong> The service cannot be reactivated back after deactivate action done.</small>`).then(confirmed => {
+                if (!confirmed) return;
+
+                $.post(`/service/${action}/${id}`, function (res) {
+                    if (res.success) {
+                        const newAction = action === 'deactivate' ? 'activate' : 'deactivate';
+                        btn.fadeOut(300, function () {
+                            $(this).remove(); // Optional: remove it entirely after fade-out
+                        });
+
+                        showActionSuccessAlert('Success', `Service ${formattedId} has been ${action}d.`);
+                    } else {
+                        showErrorAlert('Error', `Service ${formattedId} not found.`);
+                    }
+                });
+            });
+        });
+    }
+
+    $(function () {
+        bindStatusButtonEvents();
+
+        // Default filter: show only active classes
+        $('select[name="status"]').val('1');
+        const defaultParams = { status: '1' };
+        loadTable(defaultParams);
+
+        // Any filter input change (including per_page)
+        $('#filterForm input, #filterForm select').on('input change', function () {
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+
+            // Do NOT reset page — keep currentPage
+            loadTable(params);
+        });
+
+        // Pagination click
+        $(document).on('click', '.pagination a', function (e) {
+            e.preventDefault();
+            const page = new URL(this.href).searchParams.get('page');
+            currentPage = parseInt(page) || 1;
+
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+            loadTable(params);
+        });
+
+        // Sort link click
+        $(document).on('click', '.sort-link', function (e) {
+            e.preventDefault();
+            const sort = $(this).data('sort');
+            if (currentSort === sort) {
+                currentDir = currentDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort = sort;
+                currentDir = 'asc';
+            }
+
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+            loadTable(params);
+        });
+
+        $('#search').on('input', function () {
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+            loadTable(params);
+        });
+
+    });
+
+</script>
+{% endblock %}

@@ -1,0 +1,378 @@
+-- ================================
+-- Part 1: User & Profile Tables
+-- ================================
+CREATE TABLE System_User (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    password VARCHAR(100) NOT NULL,
+    ic_no VARCHAR(20) NOT NULL,
+    gender VARCHAR(10) NOT NULL CHECK (gender IN ('F', 'M')),
+    dob DATE,
+    address TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT '1' CHECK (status IN ('0', '1'))
+);
+
+CREATE TABLE Tutor (
+    tutor_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    tel_no VARCHAR(15) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    age INT NOT NULL CHECK (age BETWEEN 1 AND 99),
+    position VARCHAR(50) NOT NULL,
+    salary DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES System_User(user_id)
+);
+
+CREATE TABLE Parent (
+    parent_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    tel_no VARCHAR(15) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    occupation VARCHAR(100) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES System_User(user_id)
+);
+
+CREATE TABLE Student (
+    student_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    parent_id INT NOT NULL,
+    edu_lvl_id INT NOT NULL,
+    age INT NOT NULL CHECK (age BETWEEN 1 AND 99),
+    payment_status VARCHAR(5) NOT NULL DEFAULT '0' CHECK (payment_status IN ('0', '1')),
+    
+    FOREIGN KEY (user_id) REFERENCES System_User(user_id),
+    FOREIGN KEY (parent_id) REFERENCES Parent(parent_id),
+    FOREIGN KEY (edu_lvl_id) REFERENCES Education_Level(edu_lvl_id)
+);
+
+-- ================================
+-- Part 2: Education & Class System
+-- ================================
+CREATE TABLE Education_Level (
+    edu_lvl_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    status VARCHAR NOT NULL
+);
+
+CREATE TABLE Subject (
+    subject_id INT AUTO_INCREMENT PRIMARY KEY,
+    edu_lvl_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    normal_class_fee DECIMAL(10,2) NOT NULL,
+    focus_class_fee DECIMAL(10,2) NOT NULL,
+    material_fee DECIMAL(10,2) NOT NULL,
+    status VARCHAR(5) NOT NULL DEFAULT '1' CHECK (status IN ('0', '1')),
+   
+    FOREIGN KEY (edu_lvl_id) REFERENCES Education_Level(edu_lvl_id)
+);
+
+CREATE TABLE Class (
+    class_id INT AUTO_INCREMENT PRIMARY KEY,
+    tutor_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    class_name VARCHAR(100) NOT NULL,
+    class_type VARCHAR(5) NOT NULL,
+    max_capacity INT NOT NULL CHECK (max_capacity BETWEEN 0 AND 999),
+    time_per_week INT NOT NULL CHECK (time_per_week BETWEEN 0 AND 99),
+    day_of_week VARCHAR(20),
+    start_time TIME,
+    end_time TIME,
+    status VARCHAR(5) NOT NULL DEFAULT '1' CHECK (status IN ('0', '1')),
+    
+    FOREIGN KEY (tutor_id) REFERENCES Tutor(tutor_id),
+    FOREIGN KEY (subject_id) REFERENCES Subject(subject_id)
+);
+
+CREATE TABLE Class_Enrollment (
+    student_id INT NOT NULL,
+    class_id INT NOT NULL,
+    enroll_datetime DATETIME NOT NULL,
+    status VARCHAR(5) NOT NULL DEFAULT '1' CHECK (status IN ('0', '1')),
+    PRIMARY KEY (student_id, class_id),
+    FOREIGN KEY (student_id) REFERENCES Student(student_id),
+    FOREIGN KEY (class_id) REFERENCES Class(class_id)
+);
+
+-- ================================
+-- Part 3: Evaluation System
+-- ================================
+CREATE TABLE Evaluation_Upload (
+    upload_id INT AUTO_INCREMENT PRIMARY KEY,
+    filename VARCHAR(255),
+    uploaded_by INT,
+    upload_time DATETIME,
+    FOREIGN KEY (uploaded_by) REFERENCES System_User(user_id)
+);
+
+CREATE TABLE Evaluation_Test (
+    test_id INT AUTO_INCREMENT PRIMARY KEY,
+    upload_id INT,
+    test_level VARCHAR(100),
+    description TEXT,
+    created_by INT,
+    created_at DATETIME,
+    FOREIGN KEY (upload_id) REFERENCES Evaluation_Upload(upload_id),
+    FOREIGN KEY (created_by) REFERENCES System_User(user_id)
+);
+
+CREATE TABLE EvaluationQuestion (
+    question_id INT AUTO_INCREMENT PRIMARY KEY,
+    test_id INT,
+    question_text TEXT,
+    option_a TEXT,
+    option_b TEXT,
+    option_c TEXT,
+    option_d TEXT,
+    correct_answer CHAR(1),
+    FOREIGN KEY (test_id) REFERENCES Evaluation_Test(test_id)
+);
+
+CREATE TABLE EvaluationAnswerLog (
+    answer_id INT AUTO_INCREMENT PRIMARY KEY,
+    result_id INT,
+    question_id INT,
+    selected_answer CHAR(1),
+    is_correct BOOLEAN,
+    FOREIGN KEY (result_id) REFERENCES StudentEvaluationResult(result_id),
+    FOREIGN KEY (question_id) REFERENCES EvaluationQuestion(question_id)
+);
+
+CREATE TABLE EvaluationLevel (
+    score INT PRIMARY KEY,
+    level_name VARCHAR(50),
+    completed_at DATETIME
+);
+
+CREATE TABLE StudentEvaluationResult (
+    result_id INT AUTO_INCREMENT PRIMARY KEY,
+    test_id INT,
+    student_id INT,
+    score INT,
+    level_name VARCHAR(100),
+    completed_at DATETIME,
+    FOREIGN KEY (test_id) REFERENCES Evaluation_Test(test_id),
+    FOREIGN KEY (student_id) REFERENCES Student(student_id),
+    FOREIGN KEY (score) REFERENCES EvaluationLevel(score)
+);
+
+-- ================================
+-- Part 4: Submission, Metrics, Payments
+-- ================================
+CREATE TABLE Homework (
+    homework_id INT AUTO_INCREMENT PRIMARY KEY,
+    homework_subject VARCHAR(100) NOT NULL,
+    due_date DATE NOT NULL,
+    create_by INT NOT NULL,
+    FOREIGN KEY (create_by) REFERENCES System_User(user_id)
+);
+
+CREATE TABLE Submission (
+    submission_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    homework_id INT NOT NULL,
+    extension_file VARCHAR(255),
+    homework_subject VARCHAR(100),
+    status VARCHAR(20),
+    comment TEXT,
+    upload_time DATETIME,
+    graded_time DATETIME,
+    FOREIGN KEY (student_id) REFERENCES Student(student_id),
+    FOREIGN KEY (homework_id) REFERENCES Homework(homework_id)
+);
+
+CREATE TABLE Evaluation_Metrics (
+    evaluation_metrics_id INT AUTO_INCREMENT PRIMARY KEY,
+    homework_id INT,
+    extension_file VARCHAR(255),
+    homework_subject VARCHAR(100),
+    comment TEXT,
+    accuracy FLOAT,
+    precision_score FLOAT,
+    recall FLOAT,
+    f1_score FLOAT,
+    loss FLOAT,
+    FOREIGN KEY (homework_id) REFERENCES Homework(homework_id)
+);
+
+CREATE TABLE Payment (
+    payment_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    total_amt DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    discount_amt DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    final_amt DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    received_amt DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    change_amt DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    payment_method VARCHAR(10) NOT NULL,
+    payment_datetime DATETIME NOT NULL,
+    FOREIGN KEY (student_id) REFERENCES Student(student_id)
+);
+
+CREATE TABLE Payment_Detail (
+    payment_detail_id INT AUTO_INCREMENT PRIMARY KEY,
+    payment_id INT NOT NULL,
+    service_name VARCHAR(100),
+    service_fee DECIMAL(10,2),
+    service_attend_time INT,
+    class_name VARCHAR(100),
+    class_fee DECIMAL(10,2),
+    fee_type VARCHAR(10) NOT NULL,
+    FOREIGN KEY (payment_id) REFERENCES Payment(payment_id)
+);
+
+-- ================================
+-- Part 5: Services and Schedules
+-- ================================
+CREATE TABLE Other_Service (
+    service_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    service_type VARCHAR(10) NOT NULL,
+    fee_type VARCHAR(10) NOT NULL,
+    deposit_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    service_fee_per_month DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    service_fee_per_attend DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    address TEXT,
+    status VARCHAR(10) NOT NULL DEFAULT '1' CHECK (status IN ('0', '1'))
+);
+
+CREATE TABLE Service_Enrollment (
+    student_id INT NOT NULL,
+    service_id INT NOT NULL,
+    enroll_datetime DATETIME NOT NULL,
+    status VARCHAR(10) NOT NULL DEFAULT '1' CHECK (status IN ('0', '1')),
+    PRIMARY KEY (student_id, service_id),
+    FOREIGN KEY (student_id) REFERENCES Student(student_id),
+    FOREIGN KEY (service_id) REFERENCES Other_Service(service_id)
+);
+
+CREATE TABLE Other_Service_Attendance (
+    other_service_att_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    session_id INT NOT NULL,
+    attendance_time DATETIME NOT NULL,
+    comment TEXT,
+    status VARCHAR(20) NOT NULL,
+    FOREIGN KEY (student_id) REFERENCES Student(student_id),
+    FOREIGN KEY (session_id) REFERENCES Other_Service_Session(session_id)
+);
+
+CREATE TABLE Other_Service_Session (
+    session_id INT AUTO_INCREMENT PRIMARY KEY,
+    service_id INT NOT NULL,
+    tutor_id INT NOT NULL,
+    service_date DATE NOT NULL,
+    notes TEXT,
+    FOREIGN KEY (tutor_id) REFERENCES Tutor(tutor_id),
+    FOREIGN KEY (service_id) REFERENCES Other_Service(service_id)
+);
+
+-- ================================
+-- Part 6: Class Sessions & Scheduling
+-- ================================
+CREATE TABLE Time_Schedule (
+    schedule_id INT AUTO_INCREMENT PRIMARY KEY,
+    class_id INT NOT NULL,
+    room_id INT NOT NULL,
+    start_datetime DATETIME NOT NULL,
+    end_datetime DATETIME NOT NULL,
+    student_enroll INT NOT NULL,
+    status VARCHAR(10) NOT NULL DEFAULT '1',
+    FOREIGN KEY (room_id) REFERENCES Room(room_id),
+    FOREIGN KEY (class_id) REFERENCES Class(class_id)
+);
+
+CREATE TABLE Class_Session (
+    session_id INT AUTO_INCREMENT PRIMARY KEY,
+    schedule_id INT NOT NULL,
+    schedule_datetime DATETIME NOT NULL,
+    attendance_code VARCHAR(20),
+    code_expiry_datetime DATETIME,
+    FOREIGN KEY (schedule_id) REFERENCES Time_Schedule(schedule_id)
+);
+
+CREATE TABLE Attendance (
+    attendance_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    session_id INT NOT NULL,
+    attendance_time DATETIME NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    FOREIGN KEY (student_id) REFERENCES Student(student_id),
+    FOREIGN KEY (session_id) REFERENCES Class_Session(session_id)
+);
+
+-- ================================
+-- Part 7: Discount, Packages, Rooms, Announcements
+-- ================================
+CREATE TABLE Discount_Metric (
+    discount_id INT AUTO_INCREMENT PRIMARY KEY,
+    num_of_enrolment INT NOT NULL,
+    discount_amt DECIMAL(10,2) NOT NULL DEFAULT 0.00
+);
+
+CREATE TABLE Schedule_Package (
+    package_id INT AUTO_INCREMENT PRIMARY KEY,
+    edu_lvl_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    year INT NOT NULL,
+    FOREIGN KEY (edu_lvl_id) REFERENCES Education_Level(edu_lvl_id)
+);
+
+CREATE TABLE Schedule_Package_Detail (
+    package_id INT NOT NULL,
+    schedule_id INT NOT NULL,
+    max_capacity INT NOT NULL,
+    PRIMARY KEY (package_id, schedule_id),
+    FOREIGN KEY (package_id) REFERENCES Schedule_Package(package_id),
+    FOREIGN KEY (schedule_id) REFERENCES Time_Schedule(schedule_id)
+);
+
+CREATE TABLE Room (
+    room_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    room_type VARCHAR(10) NOT NULL,
+    max_capacity INT NOT NULL CHECK (max_capacity BETWEEN 0 AND 999)
+);
+
+CREATE TABLE Announcement (
+    announcement_id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    content TEXT,
+    created_at DATETIME NOT NULL,
+    expiry_at DATETIME NOT NULL,
+    target_role VARCHAR(50) NOT NULL
+);
+
+-- ================================
+-- Part 8: Chat System
+-- ================================
+CREATE TABLE Chat_Room (
+    chat_room_id INT AUTO_INCREMENT PRIMARY KEY,
+    room_name VARCHAR(100) NOT NULL,
+    room_type VARCHAR(50) NOT NULL,
+    created_by INT NOT NULL,
+    created_datetime DATETIME NOT NULL,
+    FOREIGN KEY (created_by) REFERENCES System_User(user_id)
+);
+
+CREATE TABLE Chat_Room_Member (
+    chat_room_id INT NOT NULL,
+    user_id INT NOT NULL,
+    joined_datetime DATETIME NOT NULL,
+    role VARCHAR(10) NOT NULL,
+    PRIMARY KEY (chat_room_id, user_id),
+    FOREIGN KEY (chat_room_id) REFERENCES Chat_Room(chat_room_id),
+    FOREIGN KEY (user_id) REFERENCES System_User(user_id)
+);
+
+CREATE TABLE Message (
+    message_id INT AUTO_INCREMENT PRIMARY KEY,
+    chat_room_id INT NOT NULL,
+    sender_id INT NOT NULL,
+    content TEXT NOT NULL,
+    send_datetime DATETIME NOT NULL,
+    read_by JSON,
+    FOREIGN KEY (chat_room_id) REFERENCES Chat_Room(chat_room_id),
+    FOREIGN KEY (sender_id) REFERENCES System_User(user_id)
+);

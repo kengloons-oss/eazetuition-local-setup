@@ -1,0 +1,144 @@
+{% extends "_admin_base.html" %}
+
+{% block head %}
+<style>
+	.status-pending {
+		color: #f5a623;
+	}
+
+	/* Yellow */
+	.status-completed {
+		color: #50c878;
+	}
+
+	/* Green */
+	.status-canceled {
+		color: #d9534f;
+	}
+
+	/* Red */
+	.holiday {
+		color: #9e9e9e;
+	}
+
+	.calbar {
+		display: flex;
+		justify-content: flex-start;
+		gap: 10px;
+		margin-bottom: 10px;
+	}
+
+	.calbar .calbtn {
+		border: none;
+		border-radius: 5px;
+		cursor: pointer;
+	}
+
+	.today {
+		background-color: #135de6;
+		color: white;
+		font-size: 16px;
+		padding: 5px 30px;
+		font-weight: bold;
+	}
+
+	.back-to-month {
+		font-size: 16px;
+		padding: 5px 30px;
+		font-weight: bold;
+	}
+
+	.prev,
+	.next {
+		background-color: #a2b6e0;
+		color: white;
+		padding: 5px 6px;
+	}
+
+	.prev {
+		margin: 0 0 0 1rem;
+	}
+
+	.next {
+		margin: 0 1rem 0 0;
+	}
+
+	.navbar--range {
+		font-size: 22px;
+		font-weight: bold;
+	}
+
+	.toastui-calendar-icon {
+		margin-top: 8px;
+	}
+
+	.toastui-calendar-ic-edit {
+		display: none;
+	}
+
+	.toastui-calendar-edit-button:hover {
+		background-color: #CADCFF;
+		font-weight: bold;
+	}
+
+	.toastui-calendar-delete-button:hover {
+		background-color: #ffcaca;
+		font-weight: bold;
+	}
+</style>
+
+{% endblock%}
+
+{% block content %}
+<!-- Filters -->
+<!-- <form id="filterForm"> -->
+	<div class="container-filter ">
+		<div class="half">
+			<div class="card card-blue-shadow">
+				<div class="card-txtfield card-body ">
+					<label for="status">Status: </label>
+					<select id="eduLevelSelect" name="edu_lvl_id" class="form-select select2">
+						<option value="">-- Select Education Level --</option>
+						{% for edu_lvl in edu_lvls %}
+						<option value="{{ edu_lvl.edu_lvl_id }}">{{ edu_lvl.name }}</option>
+						{% endfor %}
+					</select>
+
+					<label for="packageSelect">Schedule Package:</label>
+					<select id="packageSelect" name="package_id" class="form-select select2">
+						<option value="">-- Select Package --</option>
+					</select>
+
+					<label for="setSelect">Package Set:</label>
+					<select id="setSelect" name="set_id" class="form-select select2">
+						<option value="">-- Select Set --</option>
+					</select>
+
+					<label for="tutorSelect">Tutor:</label>
+					<select id="tutorSelect" name="tutor_id" class="form-select select2">
+						<option value="">-- All --</option>
+					</select>
+
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="card-button-right">
+		<button data-get="/class/session/replacement" type="button" id="b_create">Create New Replacement Class</button>
+	</div>
+
+
+<!-- </form> -->
+
+<!-- Where the calendar or session list will be loaded -->
+<div id="classSessionCalendar">
+
+</div>
+
+<!-- ======================= -->
+<!-- Include script at bottom -->
+<!-- ======================= -->
+<script src="{{ url_for('static', filename='js/general/class/class_calendar.js') }}"></script>
+
+{% endblock %}

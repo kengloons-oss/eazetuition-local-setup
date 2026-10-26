@@ -1,0 +1,83 @@
+{% extends "_admin_base.html" %}
+
+{% block head %}
+<script src="{{ url_for('static', filename='js/general/class/enrollment_add.js') }}"></script>
+
+{% endblock %}
+
+{% block content %}
+<form method="post" action="" id="class-form" data-mode="add">
+   <div class="container">
+        <div class="columns">
+            <!-- con2 -->
+            <div class="formformat column col-6 col-sm-12 card my-single-card">
+                <div class="card-header">
+                    <div class="card-title h5">
+                        <!-- Back Button -->
+                        <button class="topleft-back" type="button" data-get="/class/enrollment/list"
+                            uk-tooltip="title: Back to Previous Section; pos: top-left;"><i
+                                class="fa-solid fa-arrow-left"></i></button> &nbsp;
+                        <!-- Page Title -->
+                        Add Class Enrollment
+                    </div>
+                </div>
+
+                <div class="card-body my-pagecard-body">
+
+                    <!-- Education Level -->
+                    <div class="form-group">
+                        <label class="form-label" for="edu_lvl_id">Education Level: </label>
+                        <select class="form-select edu_lvl_id select2" name="edu_lvl_id">
+                            <option value="" disabled selected>Select Education Level</option>
+                            {% for edu_lvl in edu_lvls %}
+                            <option value="{{ edu_lvl['edu_lvl_id'] }}">{{ edu_lvl['name'] }}</option>
+                            {% endfor %}
+                        </select>
+                        <span class="error-message"></span>
+                    </div>
+
+                    <!-- Intake Year -->
+                    <div class="form-group">
+                        <label class="form-label" for="intake_year">Intake Year: </label>
+                        <select class="form-select intake_year select2" name="intake_year">
+                            {% for y in range(current_year, current_year + 11) %}
+                            <option value="{{ y }}" {% if y==current_year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+
+
+                    <!-- Student -->
+                    <div class="form-group">
+                        <label class="form-label" for="subject_id">Student: </label>
+                        <select class="form-select student_id select2" name="student_id" disabled>
+                            <option value="" disabled selected>Select Student</option>
+                            <!-- Options will be appended via AJAX -->
+                        </select>
+
+                        <span class="error-message"></span>
+                    </div>
+
+                    <!-- Class -->
+                    <div class="form-group">
+                        <label class="form-label" for="class_">Class: </label>
+                        <select id="class" name="class_" class="form-select select2 class_" multiple disabled>
+                            <option value="" disabled selected>Select Class</option>
+                            <!-- Options will be appended via AJAX -->
+                        </select>
+                        <span class="error-message"></span>
+                    </div>
+
+
+                    <!-- Buttons -->
+                    <div class="text-right" style="padding-top:16px;">
+                        <button type="reset" class="btn btn-secondary">Reset</button>
+                        <button type="submit" class="btn btn-primary" disabled>Add</button>
+                    </div>
+                </div>
+            </div> <!--end left-side -->
+        </div>
+    </div>
+</form>
+{% endblock %}

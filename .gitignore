@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+node_modules/
+.expo/
+.idea/
+.vscode/
+**/.git_disabled/
+.pytest_cache/
+coverage/
+dist/
+build/
+*.log
+.DS_Store
+Thumbs.db
+
+# Local configuration and secrets. Keep example templates trackable.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# User uploads can contain personal information (photos, homework, IDs, etc.).
+uploads/**
+!uploads/.gitkeep
+static/uploads/**
+**/debug.keystore
+*.keystore

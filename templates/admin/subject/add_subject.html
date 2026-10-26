@@ -1,0 +1,76 @@
+{% extends "_admin_base.html" %}
+{% block content %}
+
+    <form method="post" action="">
+        <div class="container">
+            <div class="columns">
+                <div class="formformat column col-6 col-sm-12 card my-single-card">
+                    <div class="card-header">
+                        <div class="card-title h5">
+                            <!-- Back Button -->
+                            <button class="topleft-back" type="button" data-get="/subject/list" uk-tooltip="title: Back to Previous Section; pos: top-left;"><i class="fa-solid fa-arrow-left"></i></button> &nbsp;
+                            <!-- Page Title -->
+                            Add Subject
+                        </div>
+
+                        <div class="card-body my-pagecard-body">
+                            <!-- Name -->
+                            <div class="form-group">
+                                <label class="form-label" for="name">Name: </label>
+                                <input class="form-input name" type="text" name="name" placeholder="Name">
+                                <span class="error-message"></span>
+                            </div>
+
+                            <!-- Education Level -->
+                            <div class="form-group">
+                                <label class="form-label" for="edu_lvl_id">Education Level: </label>
+                                <select class="form-select select2 edu_lvl_id" name="edu_lvl_id">
+                                    <option value="" disabled selected>Select Education Level</option>
+                                    {% for lvl in edu_lvls %}
+                                        <option value="{{ lvl['edu_lvl_id'] }}">{{ lvl['name'] }}</option>
+                                    {% endfor %}
+                                </select>
+                                <span class="form-input-hint" id="name-error"></span>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="form-group">
+                                <label class="form-label" for="description">Description: </label>
+                                <textarea class="form-input description" type="text" name="description" placeholder="Desctiption"></textarea>
+                                <span class="error-message"></span>
+                            </div>
+
+                            <!-- Normal Class Fee -->
+                            <div class="form-group">
+                                <label class="form-label" for="normal_class_fee">Normal Class Fee (RM): </label>
+                                <input class="form-input normal_class_fee" type="number" name="normal_class_fee" min="0" max="9999.99" step="0.01" placeholder="0.00">
+                                <span class="error-message"></span>
+                            </div>
+
+                            <!-- Focus Class Fee (RM) -->
+                            <div class="form-group">
+                                <label class="form-label" for="focus_class_fee">Focus Class Fee (RM): </label>
+                                <input class="form-input focus_class_fee" type="number" name="focus_class_fee" min="0" max="9999.99" step="0.01" placeholder="0.00">
+                                <span class="error-message"></span>
+                            </div>
+
+                            <!-- Material Fee (RM) -->
+                            <div class="form-group">
+                                <label class="form-label" for="material_fee">Material Fee (RM): </label>
+                                <input class="form-input material_fee" type="number" name="material_fee" min="0" max="9999.99" step="0.01" placeholder="0.00">
+                                <span class="error-message"></span>
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="text-right" style="padding-top:16px;">
+                                <button type="reset" class="btn btn-secondary">Reset</button>
+                                <button type="submit" class="btn btn-primary">Add</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock %}
+

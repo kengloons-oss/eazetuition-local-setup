@@ -1,0 +1,148 @@
+{% extends "_admin_base.html" %}
+
+{% block content %}
+<form method="post" id="service-enrollment-form">
+    <div class="container">
+        <div class="columns">
+            <div class="formformat column col-6 col-sm-12 card my-single-card">
+                <div class="card-header">
+                    <div class="card-title h5">
+                        <button class="topleft-back" type="button" data-get="/service/enrollment/list"
+                            uk-tooltip="title: Back to Previous Section; pos: top-left;">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button> &nbsp;
+                        Edit Service Enrollment
+                    </div>
+                </div>
+
+                <div class="card-body my-pagecard-body">
+                    <input type="hidden" name="service_enrollment_id" value="{{ enrollment.service_enrollment_id }}">
+
+                    <!-- Student -->
+                    <div class="form-group">
+                        <label class="form-label">Student:</label>
+                        <div class="fake-input">{{ enrollment.student.user.name }}</div>
+                    </div>
+
+                    <!-- Service Type -->
+                    <div class="form-group">
+                        <label class="form-label">Service Type:</label>
+                        <div class="fake-input">{{ Helper.format_service_type(enrollment.service.service_type) }}</div>
+                    </div>
+
+                    <!-- Service -->
+                    <div class="form-group">
+                        <label class="form-label">Service:</label>
+                        <div class="fake-input">{{ enrollment.service.name }}</div>
+                    </div>
+
+                    {% if enrollment.status == '1' and enrollment.service.service_type == '2' %}
+                    <!-- Address -->
+                    <div class="form-group">
+                        <label class="form-label" for="address">Address:</label>
+                        <textarea class="form-input address" name="address" placeholder="Address">{{ enrollment.address }}</textarea>
+                        <span class="error-message"></span>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="text-right" style="padding-top:16px;">
+                        <button type="reset" class="btn btn-secondary">Reset</button>
+                        <button type="submit" class="btn btn-primary" disabled>Update</button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+
+<script>
+$(document).ready(function() {
+    const $address = $('.address');
+    const $submitBtn = $('button[type="submit"]');
+    const originalAddress = $address.val().trim();
+    let addressChanged = false;
+    let addressValid = false;
+
+    // 🧩 Simple validation (non-empty, min length 5)
+    function validateAddress(value) {
+        if (!value || value.trim().length < 5) {
+            showError($address, "Address must be at least 5 characters long.");
+            return false;
+        }
+        clearError($address);
+        return true;
+    }
+
+    // 🧩 Reusable error helpers
+    function showError($el, msg) {
+        $el.addClass('is-invalid');
+        $el.siblings('.error-message').text(msg);
+    }
+    function clearError($el) {
+        $el.removeClass('is-invalid');
+        $el.siblings('.error-message').text('');
+    }
+
+    // 🧩 Detect change and validate
+    $address.on('input blur', function() {
+        const currentVal = $(this).val().trim();
+        addressChanged = currentVal !== originalAddress;
+        addressValid = validateAddress(currentVal);
+
+        // Enable submit only if changed AND valid
+        $submitBtn.prop('disabled', !(addressChanged && addressValid));
+    });
+
+    // 🧩 Handle form submission
+    $('#service-enrollment-form').on('submit', function(e) {
+        e.preventDefault();
+
+        if (!addressChanged || !addressValid) {
+            showErrorAlert('Validation Error', 'Please modify the address and ensure it’s valid before saving.');
+            return;
+        }
+
+        // 🧠 Ask user for confirmation before update
+        showWarningAlert('Please Confirm', `
+            Are you sure you want to update the address of this enrollment?
+        `).then(function() {
+            const payload = {
+                service_enrollment_id: $('input[name="service_enrollment_id"]').val(),
+                address: $address.val().trim()
+            };
+
+            $.ajax({
+                url: '/service/enrollment/detail', // ✅ your controller route
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function(res) {
+                    if (res.status === 'success') {
+                        showSuccessAlert(res.title, res.message, res.redirectUrl);
+                        $submitBtn.prop('disabled', true);
+                    } else {
+                        showErrorAlert(res.title || 'Error', res.message || 'Failed to update address.');
+                    }
+                },
+                error: function() {
+                    showErrorAlert('Error', 'An unexpected error occurred. Please try again.');
+                }
+            });
+        }, function() {
+            // ❌ User cancelled the update
+            console.log("User cancelled address update.");
+        });
+    });
+
+    // 🧩 Reset button
+    $('button[type="reset"]').on('click', function() {
+        $address.val(originalAddress);
+        clearError($address);
+        $submitBtn.prop('disabled', true);
+    });
+});
+</script>
+
+{% endblock %}

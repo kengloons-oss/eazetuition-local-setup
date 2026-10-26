@@ -1,0 +1,62 @@
+<div class="card-left-tb">
+    {{ current_count }} of {{ total_count }} record(s) &nbsp;&nbsp;| &nbsp;
+    Page {{ page }} of {{ page_count }}
+</div>
+
+<table class="admin-table1">
+    <thead>
+        <tr>
+            {% for f in fields %}
+                {% set field = f.name %}
+                {% set label = f.label %}
+                {% set dir_toggle = 'asc' if sort != field or dir == 'desc' else 'desc' %}
+                {% set icon = '↑' if sort == field and dir == 'asc' else '↓' if sort == field else '' %}
+                <th class="table_headers">
+                    <a href="?name={{ name or '' }}&status={{ status or '' }}&sort={{ field }}&dir={{ dir_toggle }}&per_page={{ per_page }}&page={{ page }}"
+                       class="sort-link {{ 'sorted' if sort == field else '' }}"
+                       data-sort="{{ field }}">
+                        {{ label }} <span>{{ icon }}</span>
+                    </a>
+                </th>
+            {% endfor %}
+            <th class="table_headers">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for subject in subjects %}
+        <tr>
+            <td>SJ{{ "%04d" % subject.subject_id }}</td>
+            <td>{{ subject.name }}</td>
+            <td>{{ subject.education_level.name }}</td>
+            <td>{{ subject.normal_class_fee }}</td>
+            <td>{{ subject.focus_class_fee }}</td>
+            <td>{{ subject.material_fee }}</td>
+            <td>
+                <button class="uk-button uk-button-default uk-button-small pastel-edit-btn" data-get="/subject/detail/{{ subject.subject_id }}" uk-tooltip="View / Edit This Details">
+                    <span uk-icon="pencil" class="uk-icon"></span> <span class="button-text">Edit</span>
+                </button>
+
+                <button class="status-btn uk-button {{ 'uk-button-danger pastel-deactivate-btn deactivate-btn btn-deactivate' if subject.status == '1' else 'uk-button-primary pastel-reactivate-btn activate-btn btn-activate' }}  uk-button-small equal-width-btn "
+                         data-id="{{ subject.subject_id }}" data-action="{{ 'deactivate' if subject.status == '1' else 'activate' }}"
+                         uk-tooltip="{{ 'Deactivate This' if subject.status == '1' else 'Reactivate This Back' }}">
+                    <span uk-icon="ban" class="uk-icon"></span> <span class="button-text">{{ 'Deactivate' if subject.status == '1' else 'Activate' }}</span>
+                </button>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">No subjects found.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Pagination -->
+<nav class="admin-pager">
+    {% if pagination.total_pages > 1 %}
+        {{ pagination.links|safe }}
+    {% else %}
+        <ul class="pagination">
+            <li class="page-item active"><span class="page-link">1</span></li>
+        </ul>
+    {% endif %}
+</nav>
+

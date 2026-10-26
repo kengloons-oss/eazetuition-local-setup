@@ -1,0 +1,244 @@
+{% extends "_admin_base.html" %}
+{% block content %}
+<!-- Filters -->
+<form id="filterForm">
+    <div class="container-filter ">
+        <div class="half">
+            <div class="card card-blue-shadow">
+                <div class="card-txtfield card-body ">
+                    <label for="status">Status: </label>
+                    <select name="status" class="form-select">
+                        <option value="">All</option>
+                        <option value="1" selected>Active</option>
+                        <option value="0">Inactive</option>
+                    </select>
+
+                    <label for="enrollment_date">Enrollment Date: </label>
+                    <div class="uk-flex uk-flex-between uk-flex-middle uk-width-1-1">
+                        <div class="uk-width-expand">
+                            <input type="text" id="enrollment_date_min" name="enrollment_date_min"
+                                placeholder="Start date" class="uk-width-1-1"
+                                uk-tooltip="title: Start date for filter; pos: top-left;">
+                        </div>
+                        <div class="uk-margin-small-left uk-margin-small-right uk-flex uk-flex-middle">
+                            -
+                        </div>
+                        <div class="uk-width-expand">
+                            <input type="text" id="enrollment_date_max" name="enrollment_date_max"
+                                placeholder="End date" class="uk-width-1-1"
+                                uk-tooltip="title: End date for filter; pos: top-left;">
+                        </div>
+                    </div>
+
+                    <label for="filter_pageitems">Item Per Page: </label>
+                    <select name="per_page" id="per_page" class="form-select">
+                        <option value="7" {% if per_page==7 %}selected{% endif %}>7</option>
+                        <option value="10" {% if per_page==10 %}selected{% endif %}>10</option>
+                        <option value="20" {% if per_page==20 %}selected{% endif %}>20</option>
+                    </select>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card-button-right">
+        <button data-get="/service/enrollment/add" id="b_create">Create New Enrollment</button>
+    </div>
+
+    <div class="search-container card-right-tb">
+        <div class="search-bar">
+            <input type="search" name="search_student_name_email" placeholder="Search Stu. Name/Email..." id="search"
+                class="search-input">
+            <button id="search-button" type="button"><i class="fas fa-search"></i></button>
+        </div>
+        <div class="search-bar">
+            <input type="search" name="search_service_name" placeholder="Search Service Name..." id="search"
+                class="search-input">
+            <button id="search-button" type="button"><i class="fas fa-search"></i></button>
+        </div>
+    </div>
+</form>
+
+<!-- Service Enrollment Table -->
+<div id="serviceEnrollmentTable">
+    {% include '/admin/other_service/_enrollment_list.html' %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentSort = '{{ sort or "class_id" }}';
+    let currentDir = '{{ dir or "asc" }}';
+    let currentPage = 1;
+
+    function loadTable(params = {}) {
+        if (currentSort) {
+            params.sort = currentSort;
+            params.dir = currentDir;
+        }
+
+        params.page = currentPage;
+
+        $.get("/service/enrollment/list", params, function (data) {
+            // If no service found, reset page to 1 and re-fetch
+            if ($(data).find('tbody tr').length === 1 && $(data).find('tbody td').text().includes('No service enrollment found')) {
+                currentPage = 1;
+                params.page = 1;
+                $.get("/service/enrollment/list", params, function (newData) {
+                    $('#serviceEnrollmentTable').html(newData);
+                    bindStatusButtonEvents();
+                });
+            } else {
+                $('#serviceEnrollmentTable').html(data);
+                bindStatusButtonEvents();
+            }
+        });
+    }
+
+
+    function bindStatusButtonEvents() {
+        $('.status-btn').off('click').on('click', function () {
+            const btn = $(this);
+            const id = btn.data('id');
+            const action = btn.data('action');
+
+            const studentName = btn.data('student-name');
+            const serviceName = btn.data('service-name');
+
+            showWarningAlert('Please Confirm', `
+            Are you sure you want to cancel the enrollment for 
+            <strong>${studentName}</strong> in 
+            <strong>${serviceName}</strong> service?<br/><br/>
+            <small>
+                ⚠️ <strong>Note:</strong> The enrollment cannot be reactivated once this action is confirmed.
+            </small>
+        `).then(confirmed => {
+                if (!confirmed) return;
+
+                $.ajax({
+                    url: `/service/enrollment/${action}/${id}`,
+                    method: 'POST',
+                    data: JSON.stringify({
+                        id: id
+                    }),
+                    contentType: 'application/json',
+                    success: function (res) {
+                        if (res.success) {
+                            btn.fadeOut(300, function () {
+                                $(this).remove();
+                            });
+                            showActionSuccessAlert('Success', `Enrollment for ${studentName} in ${serviceName} has been cancelled.`);
+                        } else {
+                            showErrorAlert('Error', res.message || 'Failed to cancel enrollment.');
+                        }
+                    },
+                    error: function () {
+                        showErrorAlert('Error', 'An unexpected error occurred. Please try again.');
+                    }
+                });
+            });
+        });
+    }
+
+
+
+    $(function () {
+        bindStatusButtonEvents();
+
+        // Default filter: show only active classes
+        $('select[name="status"]').val('1');
+        const defaultParams = { status: '1' };
+        loadTable(defaultParams);
+
+        // Any filter input change (including per_page)
+        $('#filterForm input, #filterForm select').on('input change', function () {
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+
+            // Do NOT reset page — keep currentPage
+            loadTable(params);
+        });
+
+        // Pagination click
+        $(document).on('click', '.pagination a', function (e) {
+            e.preventDefault();
+            const page = new URL(this.href).searchParams.get('page');
+            currentPage = parseInt(page) || 1;
+
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+            loadTable(params);
+        });
+
+        // Sort link click
+        $(document).on('click', '.sort-link', function (e) {
+            e.preventDefault();
+            const sort = $(this).data('sort');
+            if (currentSort === sort) {
+                currentDir = currentDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort = sort;
+                currentDir = 'asc';
+            }
+
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+            loadTable(params);
+        });
+
+        $('#search').on('input', function () {
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+            loadTable(params);
+        });
+
+        const minDateInput = document.getElementById('enrollment_date_min');
+        const maxDateInput = document.getElementById('enrollment_date_max');
+
+        if (minDateInput && maxDateInput) {
+            const minPicker = flatpickr(minDateInput, {
+                dateFormat: "Y-m-d",
+                onChange: function (selectedDates) {
+                    if (selectedDates.length > 0) {
+                        maxPicker.set('minDate', selectedDates[0]);
+                        validateDates();
+                    }
+                }
+            });
+
+            const maxPicker = flatpickr(maxDateInput, {
+                dateFormat: "Y-m-d",
+                onChange: function (selectedDates) {
+                    if (selectedDates.length > 0) {
+                        minPicker.set('maxDate', selectedDates[0]);
+                        validateDates();
+                    }
+                }
+            });
+        }
+
+        function validateDates() {
+            const minVal = minDateInput.value;
+            const maxVal = maxDateInput.value;
+
+            if (minVal && maxVal && new Date(maxVal) < new Date(minVal)) {
+                UIkit.notification({
+                    message: 'End date cannot be earlier than start date!',
+                    status: 'danger',
+                    pos: 'top-center',
+                    timeout: 3000
+                });
+                maxDateInput.value = '';
+            }
+        }
+
+    });
+
+</script>
+{% endblock %}

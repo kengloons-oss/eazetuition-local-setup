@@ -1,0 +1,73 @@
+<div class="card-left-tb">
+    {{ current_count }} of {{ total_count }} record(s) &nbsp;&nbsp;| &nbsp;
+    Page {{ page }} of {{ page_count }}
+</div>
+
+<table class="admin-table1">
+    <thead>
+        <tr>
+            {% for f in fields %}
+            {% set field = f.name %}
+            {% set label = f.label %}
+            {% set dir_toggle = 'asc' if sort != field or dir == 'desc' else 'desc' %}
+            {% set icon = '↑' if sort == field and dir == 'asc' else '↓' if sort == field else '' %}
+            <th class="table_headers">
+                <a href="?student_name_email={{ student_name_email or '' }}&service_name={{ service_name or '' }}&status={{ status or '' }}&sort={{ field }}&dir={{ dir_toggle }}&per_page={{ per_page }}&page={{ page }}"
+                    class="sort-link {{ 'sorted' if sort == field else '' }}" data-sort="{{ field }}">
+                    {{ label }} <span>{{ icon }}</span>
+                </a>
+            </th>
+            {% endfor %}
+            <th class="table_headers">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for enrollment in enrollments %}
+        <tr>
+            <td>
+                <a href="{{ url_for('service.edit_service', id=enrollment.service_id) }}">
+                    {{ enrollment.service.name }} - {{ Helper.format_service_type(enrollment.service.service_type) }}
+                </a>
+            </td>
+
+            <td>{{ enrollment.student.user.name }}</td>
+            <td>{{ Helper.format_full_date(enrollment.enroll_datetime) }}</td>
+            <td>
+                <button class="uk-button uk-button-default uk-button-small pastel-edit-btn"
+                    data-get="/service/enrollment/detail?service_enrollment_id={{ enrollment.service_enrollment_id }}"
+                    uk-tooltip="View Student Enrollment Detail">
+                    <span uk-icon="pencil"></span> <span class="button-text">Detail</span>
+                </button>
+
+
+                {% if enrollment.status == '1' %}
+                <button
+                    class="status-btn uk-button uk-button-danger pastel-deactivate-btn deactivate-btn btn-deactivate uk-button-small equal-width-btn"
+                    data-id="{{ enrollment.service_enrollment_id }}"
+                    data-student-name="{{ enrollment.student.user.name }}"
+                    data-service-name="{{ enrollment.service.name }}" data-action="deactivate"
+                    uk-tooltip="Cancel This Enrollment">
+                    <span uk-icon="ban" class="uk-icon"></span>
+                    <span class="button-text">Cancel</span>
+                </button>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6">No enrollment found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Pagination -->
+<nav class="admin-pager">
+    {% if pagination.total_pages > 1 %}
+    {{ pagination.links|safe }}
+    {% else %}
+    <ul class="pagination">
+        <li class="page-item active"><span class="page-link">1</span></li>
+    </ul>
+    {% endif %}
+</nav>

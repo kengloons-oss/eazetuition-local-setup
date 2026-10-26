@@ -1,0 +1,81 @@
+<div class="card-left-tb">
+    {{ current_count }} of {{ total_count }} record(s) &nbsp;&nbsp;| &nbsp;
+    Page {{ page }} of {{ page_count }}
+</div>
+
+<table class="admin-table1">
+    <thead>
+        <tr>
+            {% for f in fields %}
+            {% set field = f.name %}
+            {% set label = f.label %}
+            {% set dir_toggle = 'asc' if sort != field or dir == 'desc' else 'desc' %}
+            {% set icon = '↑' if sort == field and dir == 'asc' else '↓' if sort == field else '' %}
+            <th class="table_headers">
+                <a href="?student_name_email={{ student_name_email or '' }}&class_name_id={{ class_name_id or '' }}&status={{ status or '' }}&sort={{ field }}&dir={{ dir_toggle }}&per_page={{ per_page }}&page={{ page }}"
+                    class="sort-link {{ 'sorted' if sort == field else '' }}" data-sort="{{ field }}">
+                    {{ label }} <span>{{ icon }}</span>
+                </a>
+            </th>
+            {% endfor %}
+            <th class="table_headers">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for enrollment in enrollments %}
+        <tr>
+            <td>
+                <a href="{{ url_for('subject.edit_subject', id=enrollment.class_detail.class_.subject_id) }}">
+                    {{ enrollment.class_detail.class_.subject.name }}
+                </a>
+            </td>
+
+            <td>
+                <a href="{{ url_for('class.edit_class', id=enrollment.class_detail.class_id) }}">
+                    {{ Helper.format_day_of_week(enrollment.class_detail.day_of_week) }}
+                    {{ Helper.format_time_12h(enrollment.class_detail.start_time) }}-
+                    {{ Helper.format_time_12h(enrollment.class_detail.end_time) }}
+                </a>
+            </td>
+
+            <td>{{ enrollment.package_set.package.year }}</td>
+            <td>{{ enrollment.student.user.name }}</td>
+            <td>{{ Helper.format_full_date(enrollment.enroll_datetime) }}</td>
+            <td>
+                <button class="uk-button uk-button-default uk-button-small pastel-edit-btn"
+                    data-get="/attedance/detail/{{ enrollment.class_enrollment_id }}"
+                    uk-tooltip="View Student Attendance">
+                    <span uk-icon="pencil" class="uk-icon"></span> <span class="button-text">Attendance</span>
+                </button>
+
+                {% if enrollment.status == '1' %}
+                <button
+                    class="status-btn uk-button uk-button-danger pastel-deactivate-btn deactivate-btn btn-deactivate uk-button-small equal-width-btn"
+                    data-id="{{ enrollment.class_enrollment_id }}" data-student="{{ enrollment.student.user.name }}"
+                    data-class-time="{{ Helper.format_day_of_week(enrollment.class_detail.day_of_week) }} {{ Helper.format_time_12h(enrollment.class_detail.start_time) }}-{{ Helper.format_time_12h(enrollment.class_detail.end_time) }}"
+                    data-subject="{{ enrollment.class_detail.class_.subject.name }}" data-action="deactivate"
+                    uk-tooltip="Cancel This Enrollment">
+                    <span uk-icon="ban" class="uk-icon"></span>
+                    <span class="button-text">Cancel</span>
+                </button>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6">No enrollment found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Pagination -->
+<nav class="admin-pager">
+    {% if pagination.total_pages > 1 %}
+    {{ pagination.links|safe }}
+    {% else %}
+    <ul class="pagination">
+        <li class="page-item active"><span class="page-link">1</span></li>
+    </ul>
+    {% endif %}
+</nav>

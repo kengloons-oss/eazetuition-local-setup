@@ -1,0 +1,195 @@
+{% extends "_admin_base.html" %}
+
+{% block head %}
+<!-- Include Flatpickr CSS and JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="{{ url_for('static', filename='js/general/schedule_package/package_add.js') }}"></script>
+
+
+<style>
+    .ai-hover-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .ai-info-icon {
+        margin-left: 4px;
+        cursor: pointer;
+        color: #666;
+    }
+
+    .ai-info-icon:hover {
+        color: #000;
+    }
+
+    /* 自定义 hover 盒子 */
+    .ai-hover-box {
+        display: none;
+        position: absolute;
+        top: 20px;
+        left: 0;
+        /* 可调：调整水平方向 */
+        z-index: 999999;
+
+        width: 520px;
+        max-width: 520px;
+        max-height: 120px;
+
+        padding: 12px 14px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+
+        overflow-y: auto;
+        overflow-x: hidden;
+
+        white-space: normal;
+    }
+
+    /* Hover 自动出现 */
+    .ai-hover-wrapper:hover .ai-hover-box {
+        display: block;
+    }
+
+    /* reason list */
+    .ai-reason-list {
+        padding-left: 16px;
+        margin: 0;
+    }
+
+    .ai-reason-list li {
+        font-size: 14px;
+        line-height: 1.35;
+        margin-bottom: 4px;
+    }
+</style>
+{% endblock %}
+
+
+
+{% block content %}
+<form method="post" action="" id="package-form" data-mode="add">
+    <div class="container card my-pagecard">
+        <div class="columns">
+            <!-- con2 -->
+            <!-- left-side -->
+            <div class="formformat column col-5 col-sm-12">
+                <div class="card-header">
+                    <div class="card-title h5">
+                        <!-- Back Button -->
+                        <button class="topleft-back" type="button" data-get="/schedule_package/list"
+                            uk-tooltip="title: Back to Previous Section; pos: top-left;"><i
+                                class="fa-solid fa-arrow-left"></i></button> &nbsp;
+                        <!-- Page Title -->
+                        Add Schedule Package
+                    </div>
+                </div>
+
+                <div class="card-body my-pagecard-body">
+
+                    <!-- Package Name -->
+                    <div class="form-group">
+                        <label class="form-label" for="name">Name: </label>
+                        <input class="form-input name" type="text" name="name" placeholder="Package Name">
+                        <span class="error-message"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="edu_lvl_id">Education Level: </label>
+                        <select class="form-select select2 edu_lvl_id" name="edu_lvl_id">
+                            <option value="" disabled selected>Select Education Level</option>
+                            {% for edu_lvl in edu_lvls %}
+                            <option value="{{ edu_lvl['edu_lvl_id'] }}">{{ edu_lvl['name'] }}</option>
+                            {% endfor %}
+                        </select>
+                        <span class="error-message"></span>
+                    </div>
+
+                    <!-- Subject -->
+                    <div class="form-group">
+                        <label class="form-label" for="subject_id">Subject: </label>
+                        <select class="form-select select2 subject_id" name="subject_id" multiple>
+                        </select>
+                        <span class="error-message"></span>
+                    </div>
+
+                    <!-- Is Open for Enrollment Toggle -->
+                    <div class="form-group">
+                        <label class="form-label" for="is_open_for_enrollment">Registration Status: </label>
+                        <div class="uk-flex uk-flex-middle">
+                            <label class="uk-switch">
+                                <input type="checkbox" id="is_open_for_enrollment" name="is_open_for_enrollment">
+                                <div class="uk-switch-slider"></div>
+                            </label>
+                            <label class="uk-margin-small-left">Open</label>
+                        </div>
+                    </div>
+
+                    <!-- Time Window (Morning / Afternoon / Fullday) -->
+                    <div class="form-group">
+                        <label class="form-label" for="time_window">Time Window: </label>
+                        <select class="form-select select2 time_window" name="time_window">
+                            <option value="M" selected>Morning (8am-12pm)</option>
+                            <option value="A">Afternoon (1pm-9pm)</option>
+                            <option value="F">Fullday (8am-9pm)</option>
+                        </select>
+                        <span class="error-message"></span>
+                    </div>
+
+                    <div class="uk-grid">
+                        <div class="uk-width-1-3">
+                            <!-- Intake Year -->
+                            <div class="form-group">
+                                <label class="form-label" for="intake_year">Intake Year: </label>
+                                <input class="form-input intake_year" type="number" name="intake_year" step="1"
+                                    placeholder="0" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                <span class="error-message"></span>
+                            </div>
+                        </div>
+
+                        <div class="uk-width-expand" style="padding-left: 20px;">
+                            <!-- Num Of Package Generate -->
+                            <div class="form-group">
+                                <label class="form-label" for="num_of_package">Number of Set Generate: </label>
+                                <input class="form-input num_of_package" type="number" name="num_of_package" min="1"
+                                    max="6" step="1" placeholder="0"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                <span class="error-message"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="text-right" style="padding-top:16px;">
+                        <button type="button" class="btn btn-secondary" id="resetBtn">Reset</button>
+                        <button type="submit" class="btn btn-primary" disabled>Add</button>
+                    </div>
+                </div>
+            </div><!-- end left-side -->
+
+            <!-- strart right-side -->
+            <div class="formformat-right column col-7 col-sm-12 ">
+                <div class="card-body my-pagecard-body">
+
+                    <!-- ========================= -->
+                    <!-- Generate Package Section -->
+                    <!-- ========================= -->
+                    <div class="form-group">
+                        <label class="form-label" for="generated_package">Generated Package: </label>
+                        <button type="button" id="generatePackageBtn" class="btn btn-outline-primary" disabled>
+                            <i class="fa-solid fa-boxes-stacked"></i> Generate Packages
+                        </button>
+                    </div>
+
+                    <div id="generatedPackages" class="uk-grid-small uk-child-width-1-2@m uk-grid-match" uk-grid
+                        style="display: none;">
+                        <!-- JS append package cards here -->
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

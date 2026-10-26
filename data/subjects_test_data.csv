@@ -1,0 +1,16 @@
+name,edu_lvl_id,description,normal_class_fee,focus_class_fee,material_fee
+Math Standard,1,Basic mathematics foundation,50,80,20
+Science Basics,1,Introduction to science,55,85,25
+English Skills,1,English reading & writing,60,90,30
+Mathematics Intermediate,2,Intermediate math topics,65,95,25
+General Science,2,Middle school science,70,100,30
+English Intermediate,2,Grammar and vocab expansion,75,110,35
+Math Advanced,3,Advanced math topics,80,120,40
+Physics Basics,3,Introductory physics,90,130,45
+English Advanced,3,Advanced literature & writing,85,125,38
+Math Foundation,4,Basic numeracy,45,70,18
+Biology Basics,4,Intro to biology,55,85,22
+Communication Skills,4,Speaking & listening,50,80,20
+Calculus I,5,Foundation of calculus,100,150,50
+Chemistry I,5,Essential chemistry,95,140,45
+Advanced English,5,Professional English,110,160,55

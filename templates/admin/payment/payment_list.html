@@ -1,0 +1,198 @@
+{% extends "_admin_base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<form id="filterForm">
+    <div class="container-filter ">
+        <div class="half">
+            <div class="card card-blue-shadow">
+                <div class="card-txtfield card-body ">
+                    <label for="status">Payment Status: </label>
+                    <select name="payment_status" class="form-select select2">
+                        <option value="" selected>All</option>
+                        <option value="1">Paid</option>
+                        <option value="0">Unpaid</option>
+                        <option value="2">Overdue</option>
+                        <option value="3">Barred</option>
+                    </select>
+
+                    <label for="amt">Amount: </label>
+                    <div class="uk-flex uk-flex-between uk-flex-middle uk-width-1-1">
+                        <div class="uk-width-expand">
+                            <input type="number" name="amt_min" step="1" min="1" max="9999"
+                                placeholder="Start amount for filter number of payment amount range"
+                                class="uk-width-1-1"
+                                uk_tooltip="title: Start amount for filter payment amount range; pos: top-left;">
+                        </div>
+                        <div class="uk-margin-small-left uk-margin-small-right uk-flex uk-flex-middle">
+                            -
+                        </div>
+                        <div class="uk-width-expand">
+                            <input type="number" name="amt_max" step="1" min="1" max="9999"
+                                placeholder="End amount for filter payment amount range" class="uk-width-1-1"
+                                uk_tooltip="title: End amount for filter payment amount range; pos: top-left;">
+                        </div>
+                    </div>
+
+                    <label for="created_at">Payment Created Date: </label>
+                    <div class="uk-flex uk-flex-between uk-flex-middle uk-width-1-1">
+                        <div class="uk-width-expand">
+                            <input type="text" id="created_at_min" name="created_at_min" placeholder="Start date"
+                                class="uk-width-1-1" uk-tooltip="title: Start date for filter; pos: top-left;">
+                        </div>
+                        <div class="uk-margin-small-left uk-margin-small-right uk-flex uk-flex-middle">
+                            -
+                        </div>
+                        <div class="uk-width-expand">
+                            <input type="text" id="created_at_max" name="created_at_max" placeholder="End date"
+                                class="uk-width-1-1" uk-tooltip="title: End date for filter; pos: top-left;">
+                        </div>
+                    </div>
+
+                    <label for="payment_date">Payment Date: </label>
+                    <div class="uk-flex uk-flex-between uk-flex-middle uk-width-1-1">
+                        <div class="uk-width-expand">
+                            <input type="text" id="pay_at_min" name="pay_at_min" placeholder="Start date"
+                                class="uk-width-1-1" uk-tooltip="title: Start date for filter; pos: top-left;">
+                        </div>
+                        <div class="uk-margin-small-left uk-margin-small-right uk-flex uk-flex-middle">
+                            -
+                        </div>
+                        <div class="uk-width-expand">
+                            <input type="text" id="payment_date_max" name="pay_at_max" placeholder="End date"
+                                class="uk-width-1-1" uk-tooltip="title: End date for filter; pos: top-left;">
+                        </div>
+                    </div>
+
+                    <label for="filter_pageitems">Item Per Page: </label>
+                    <select name="per_page" id="per_page" class="form-select select2">
+                        <option value="7" {% if per_page==7 %}selected{% endif %}>7</option>
+                        <option value="10" {% if per_page==10 %}selected{% endif %}>10</option>
+                        <option value="20" {% if per_page==20 %}selected{% endif %}>20</option>
+                    </select>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card-button-right">
+        <button data-get="/payment/add" id="b_create">Make Payment</button>
+    </div>
+
+    <div class="search-container card-right-tb">
+        <div class="search-bar">
+            <input type="search" name="search_student_name_email" placeholder="Search Stu. Name/Email..." id="search"
+                class="search-input">
+            <button id="search-button" type="button"><i class="fas fa-search"></i></button>
+        </div>
+    </div>
+</form>
+
+<!-- Payment Table -->
+<div id="paymentTable">
+    {% include '/admin/payment/_payment_list.html' %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentSort = '{{ sort or "payment_id" }}';
+    let currentDir = '{{ dir or "desc" }}';
+    let currentPage = 1;
+
+    function loadTable(params = {}) {
+        if (currentSort) {
+            params.sort = currentSort;
+            params.dir = currentDir;
+        }
+
+        params.page = currentPage;
+
+        $.get("/payment/list", params, function (data) {
+            // If no class found, reset page to 1 and re-fetch
+            if ($(data).find('tbody tr').length === 1 && $(data).find('tbody td').text().includes('No Payment found')) {
+                currentPage = 1;
+                params.page = 1;
+                $.get("/payment/list", params, function (newData) {
+                    $('#paymentTable').html(newData);
+                });
+            } else {
+                $('#paymentTable').html(data);
+            }
+        });
+    }
+
+    $(function () {
+        loadTable({ payment_status: '' });
+
+        // Open receipt PDF in new tab
+        $(document).on('click', '.btn-receipt', function (e) {
+            e.preventDefault();
+            const id = $(this).data('id');
+
+            // Direct open PDF in new tab
+            window.open(window.location.origin + `/payment/${id}/receipt/preview`, "_blank");
+
+        });
+
+        // Pagination click
+        $(document).on('click', '.pagination a', function (e) {
+            e.preventDefault();
+            const page = new URL(this.href).searchParams.get('page');
+            currentPage = parseInt(page) || 1;
+
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+            loadTable(params);
+        });
+
+        // Sort link click
+        $(document).on('click', '.sort-link', function (e) {
+            e.preventDefault();
+            const sort = $(this).data('sort');
+            if (currentSort === sort) {
+                currentDir = currentDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort = sort;
+                currentDir = 'asc';
+            }
+
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+            loadTable(params);
+        });
+
+        $('#filterForm input, #filterForm select').on('input change', function () {
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+            loadTable(params);
+        });
+
+    });
+
+    $(function () {
+
+        const options = {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            time_24hr: false, // 👉 12-hour format
+        };
+
+        flatpickr("#created_at_min", options);
+        flatpickr("#created_at_max", options);
+        flatpickr("#pay_at_min", options);
+        flatpickr("#payment_date_max", options);
+    });
+</script>
+{% endblock %}

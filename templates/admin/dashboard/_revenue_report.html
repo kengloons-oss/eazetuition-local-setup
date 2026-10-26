@@ -1,0 +1,31 @@
+<div class="card card-blue-shadow uk-margin">
+
+    <div class="card-body">
+        <h3>Revenue Summary</h3>
+
+        <div class="uk-grid-small uk-child-width-1-3" uk-grid>
+            <div>
+                <div class="summary-box">
+                    <h4>Total Revenue</h4>
+                    <p><strong>RM {{ summary.total_revenue }}</strong></p>
+                </div>
+            </div>
+
+            <div>
+                <div class="summary-box">
+                    <h4>Average Per Student</h4>
+                    <p><strong>RM {{ summary.avg_revenue_per_student }}</strong></p>
+                </div>
+            </div>
+        </div>
+
+        <hr>
+
+        <h4>Revenue Trend</h4>
+        <canvas id="revenueChart"></canvas>
+
+        <!-- Hidden JSON dump for JS -->
+        <div id="revenueChartData"
+             data-json='{{ chart | tojson | safe }}'></div>
+    </div>
+</div>

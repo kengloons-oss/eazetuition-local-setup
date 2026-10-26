@@ -1,0 +1,263 @@
+{% extends "_admin_base.html" %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- <script src="/static/js/chart/chart.umd.min.js"></script> -->
+
+
+<style>
+    .no-data-msg {
+        text-align: center;
+        color: #888;
+        font-size: 14px;
+        padding: 40px 0;
+        font-style: italic;
+    }
+
+    /* --- Filters (labels + select options) --- */
+    #revenueFilters label,
+    #outstandingFilters label,
+    #serviceFilters label {
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    /* --- Summary box layout --- */
+    .summary-box {
+        background: #fffbe8;
+        border: 1px solid #e6e2c8;
+        border-radius: 8px;
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 70px;
+    }
+
+    .summary-icon {
+        font-size: 22px;
+        margin-bottom: 6px;
+        color: #c2a200;
+    }
+
+
+    /* Title inside summary */
+    .summary-box h4 {
+        font-size: 13px;
+        font-weight: 600;
+        margin: 0 0 6px 0;
+        color: #333;
+    }
+
+    /* Value number */
+    .summary-box p strong {
+        font-size: 18px;
+        font-weight: 700;
+        color: #222;
+    }
+
+    /* Remove margin */
+    .summary-box p {
+        margin: 0;
+    }
+
+    .chart-container {
+        margin: 0 auto;
+        display: block;
+    }
+
+    /* 让 Select2 变小巧（高度、padding、字体） */
+    .select2-container .select2-selection--single {
+        height: 30px !important;
+        padding: 2px 6px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .select2-container .select2-selection--single .select2-selection__rendered {
+        font-size: 12px !important;
+        padding-left: 2px !important;
+    }
+
+    .select2-container .select2-selection--single .select2-selection__arrow {
+        height: 100% !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h2>Dashboard</h2>
+
+<!-- ===========================
+     LAYOUT GRID
+=========================== -->
+<div class="uk-grid-small" uk-grid>
+
+    <!-- ===========================
+         LEFT COLUMN (50%)
+    ============================ -->
+    <div class="uk-width-1-2 uk-width-2-3@m">
+
+        <!-- ===========================
+             Revenue Report Card
+        ============================ -->
+        <div class="card card-blue-shadow uk-margin">
+            <h4>Revenue Summary Report</h4>
+
+            <!-- Revenue Filters -->
+            <form id="revenueFilters" class="uk-grid-small" uk-grid>
+                <div class="uk-width-1-5">
+                    <label>Month</label>
+                    <select name="rev_month" class="select2">
+                        <option value="">All</option>
+                        {% for num, m in months %}
+                        <option value="{{ num }}" {% if num==current_month %}selected{% endif %}>{{ m }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="uk-width-1-5">
+                    <label>Year</label>
+                    <select name="rev_year" class="select2">
+                        {% for y in range(2023, 2031) %}
+                        <option value="{{ y }}" {% if y==current_year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="uk-width-1-5">
+                    <label>Pay By</label>
+                    <select name="rev_payment_method" class="select2">
+                        <option value="">All</option>
+                        <option value="1">Cash</option>
+                        <option value="2">Stripe</option>
+                        <option value="3">Touch'n Go / POS</option>
+                    </select>
+                </div>
+            </form>
+
+            <hr>
+
+            <!-- Revenue Summary -->
+            <div id="revenueSummary"></div>
+
+            <!-- Revenue Chart -->
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+
+        <!-- ===========================
+             Outstanding Report Card
+        ============================ -->
+        <div class="card card-blue-shadow uk-margin">
+            <h4>Outstanding Payment Report</h4>
+
+            <!-- Outstanding Filters -->
+            <form id="outstandingFilters" class="uk-grid-small" uk-grid>
+                <div class="uk-width-1-5">
+                    <label>Month</label>
+                    <select name="out_month" class="select2">
+                        <option value="">All</option>
+                        {% for num, m in months %}
+                        <option value="{{ num }}" {% if num==current_month %}selected{% endif %}>{{ m }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="uk-width-1-5">
+                    <label>Year</label>
+                    <select name="out_year" class="select2">
+                        {% for y in range(2023, 2031) %}
+                        <option value="{{ y }}" {% if y==current_year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="uk-width-1-5">
+                    <label>Module</label>
+                    <select name="out_module_type" class="select2">
+                        <option value="">All</option>
+                        <option value="tuition">Tuition</option>
+                        <option value="service">Service</option>
+                    </select>
+                </div>
+            </form>
+
+            <hr>
+
+            <!-- Outstanding Summary -->
+            <div id="outstandingSummary"></div>
+
+            <!-- Outstanding Chart -->
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="outstandingChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===========================
+         RIGHT COLUMN (50%)
+    ============================ -->
+    <div class="uk-width-1-3 uk-width-1-3@m">
+
+        <!-- ===========================
+             Service Subscription Report
+        ============================ -->
+        <div class="card card-blue-shadow uk-margin">
+            <h4>Top 5 Service Subscription Report</h4>
+
+            <!-- Service Filters -->
+            <form id="serviceFilters" class="uk-grid-small" uk-grid>
+                <div class="uk-width-1-3">
+                    <label>Month</label>
+                    <select name="svc_month" class="select2">
+                        <option value="">All</option>
+                        {% for num, m in months %}
+                        <option value="{{ num }}" {% if num==current_month %}selected{% endif %}>{{ m }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="uk-width-1-3">
+                    <label>Year</label>
+                    <select name="svc_year" class="select2">
+                        {% for y in range(2023, 2031) %}
+                        <option value="{{ y }}" {% if y==current_year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="uk-width-1-3">
+                    <label>Type</label>
+                    <select name="svc_service_type" class="select2">
+                        <option value="">All</option>
+                        <option value="1">Childcare</option>
+                        <option value="2">Transport</option>
+                        <option value="3">Other</option>
+                    </select>
+                </div>
+            </form>
+
+            <hr>
+
+            <!-- Subscription Summary -->
+            <div id="serviceSummary"></div>
+
+            <!-- Pie Chart -->
+            <div class="chart-container" style="height: 350px;">
+                <canvas id="serviceChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/general/dashboard.js"></script>
+{% endblock %}

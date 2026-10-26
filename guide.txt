@@ -1,0 +1,9 @@
+EazeTuition startup instructions are in README.md.
+
+Quick start:
+1. Create a fresh MySQL schema named tuition_fyp and import tuition_fyp.sql.
+2. Copy .env.example to .env and set DATABASE_URI to your local MySQL connection.
+3. Create a Python virtual environment, install requirements.txt, and run python app.py.
+4. In EazeTuition/, set EXPO_PUBLIC_API_BASE_URL for your device and run npm ci, then npx expo start -c.
+
+Do not put credentials in this file. Credentials formerly present in the old guide were exposed in the repository and should be rotated.

@@ -1,0 +1,24 @@
+{% if show_calendar %}
+<div class="calbar">
+    <button class="btn-sm calbtn today">Today</button>
+    <button class="btn-sm calbtn prev"><i class="fa-solid fa-angle-left"></i></button>
+    <span class="navbar--range"></span>
+    <button class="btn-sm calbtn next"><i class="fa-solid fa-angle-right"></i></button>
+    <button class="btn btn-sm back-to-month" style="display:none;">
+        <i class="fa-solid fa-calendar-days"></i> Monthly View
+    </button>
+    
+</div>
+
+<!-- ✅ Embed JSON directly in data attribute -->
+<div id="calendar"
+     style="height: 550px;"
+     data-events='{{ events_json|safe }}'
+     data-tutor-id='{{ tutor_id or "" }}'>
+</div>
+
+{% else %}
+<div class="text-center p-5">
+    <h4>Select Education Level, Schedule Package and Package Set to view class session calendar.</h4>
+</div>
+{% endif %}

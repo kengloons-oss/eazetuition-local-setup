@@ -1,0 +1,209 @@
+{% extends "_admin_base.html" %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/jquery-ui-year-picker@1.0.0/jquery-ui-year-picker.min.js"></script>
+
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<form id="filterForm">
+    <div class="container-filter ">
+        <div class="half">
+            <div class="card card-blue-shadow">
+                <div class="card-txtfield card-body ">
+                    <label for="status">Status: </label>
+                    <select name="status" class="form-select select2">
+                        <option value="">All</option>
+                        <option value="1" selected>Active</option>
+                        <option value="0">Inactive</option>
+                    </select>
+
+                    <label for="edu_lvl">Education Level: </label>
+                    <select name="edu_lvl" id="edu_lvl" class="form-select select2">
+                        <option value="" selected>All</option>
+                        {% for edu_lvl in edu_lvls %}
+                        <option value="{{ edu_lvl['edu_lvl_id'] }}">{{ edu_lvl['name'] }}</option>
+                        {% endfor %}
+                    </select>
+
+
+                    <label for="year">Year of Intake: </label>
+                    <select name="year" id="yearPicker" class="form-select select2">
+                        {% for y in range(2000, 2031) %}
+                        <option value="{{ y }}" {% if y==2025 %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+
+
+                    <label for="num_of_subject">No. of Subject: </label>
+                    <div class="uk-flex uk-flex-between uk-flex-middle uk-width-1-1">
+                        <div class="uk-width-expand">
+                            <input type="number" name="num_of_subject_min" step="1" min="1" max="9999"
+                                placeholder="Start amount for filter number of subject range" class="uk-width-1-1"
+                                uk_tooltip="title: Start amount for filter number of subject range; pos: top-left;">
+                        </div>
+                        <div class="uk-margin-small-left uk-margin-small-right uk-flex uk-flex-middle">
+                            -
+                        </div>
+                        <div class="uk-width-expand">
+                            <input type="number" name="num_of_subject_max" step="1" min="1" max="9999"
+                                placeholder="End amount for filter number of subject range" class="uk-width-1-1"
+                                uk_tooltip="title: End amount for filter number of subject range; pos: top-left;">
+                        </div>
+                    </div>
+
+                    <label for="filter_pageitems">Item Per Page: </label>
+                    <select name="per_page" id="per_page" class="form-select select2">
+                        <option value="7" {% if per_page==7 %}selected{% endif %}>7</option>
+                        <option value="10" {% if per_page==10 %}selected{% endif %}>10</option>
+                        <option value="20" {% if per_page==20 %}selected{% endif %}>20</option>
+                    </select>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card-button-right">
+        <button data-get="/schedule_package/add" id="b_create">Create New Schedule Package</button>
+    </div>
+
+    <div class="search-container card-right-tb">
+        <div class="search-bar">
+            <input type="search" name="search_package_name" placeholder="Search Package Name..."
+                id="search_package_name" class="search-input">
+            <button id="search-button" type="button"><i class="fas fa-search"></i></button>
+        </div>
+        <div class="search-bar">
+            <input type="search" name="search_tutor_name" placeholder="Search Tutor Name..." id="search_tutor_name"
+                class="search-input">
+            <button id="search-button" type="button"><i class="fas fa-search"></i></button>
+        </div>
+    </div>
+</form>
+
+<!-- Package Table -->
+<div id="packageTable">
+    {% include '/admin/schedule_package/_package_list.html' %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentSort = '{{ sort or "class_id" }}';
+    let currentDir = '{{ dir or "asc" }}';
+    let currentPage = 1;
+
+    function loadTable(params = {}) {
+        if (currentSort) {
+            params.sort = currentSort;
+            params.dir = currentDir;
+        }
+
+        params.page = currentPage;
+
+        $.get("/schedule_package/list", params, function (data) {
+            // If no class found, reset page to 1 and re-fetch
+            if ($(data).find('tbody tr').length === 1 && $(data).find('tbody td').text().includes('No Package found')) {
+                currentPage = 1;
+                params.page = 1;
+                $.get("/schedule_package/list", params, function (newData) {
+                    $('#packageTable').html(newData);
+                    bindStatusButtonEvents();
+                });
+            } else {
+                $('#packageTable').html(data);
+                bindStatusButtonEvents();
+            }
+        });
+    }
+
+
+    function bindStatusButtonEvents() {
+        $('.status-btn').off('click').on('click', function () {
+            const btn = $(this);
+            const id = btn.data('id');
+            const action = "deactivate";
+            const formattedId = `SP${id.toString().padStart(4, '0')}`;
+
+            showWarningAlert('Please Confirm', `Are you sure you want to ${action} <strong>Package ${formattedId}</strong>?<br/><br/>
+                            <small>
+                                ⚠️ <strong>Note:</strong> Any set and class linked to this package will also be 
+                                <strong>automatically deactivated</strong> and <u>cannot be reactivated once this action is confirmed</u>.
+                            </small>`).then(confirmed => {
+                if (!confirmed) return;
+
+                $.post(`/schedule_package/${action}/${id}`, function (res) {
+                    if (res.success) {
+                        btn.fadeOut(300, function () {
+                            $(this).remove(); // Optional: remove it entirely after fade-out
+                        });
+                        showActionSuccessAlert('Success', `Package ${formattedId} has been ${action}d.`);
+                    } else {
+                        showErrorAlert('Error', `Package ${formattedId} not found.`);
+                    }
+                });
+            });
+        });
+    }
+
+    $(function () {
+
+        bindStatusButtonEvents();
+
+        // Default filter: show only active classes
+        $('select[name="status"]').val('1');
+        const defaultParams = { status: '1' };
+        loadTable(defaultParams);
+
+        // Any filter input change (including per_page)
+        $('#filterForm input, #filterForm select').on('input change', function () {
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+
+            // Do NOT reset page — keep currentPage
+            loadTable(params);
+        });
+
+        // Pagination click
+        $(document).on('click', '.pagination a', function (e) {
+            e.preventDefault();
+            const page = new URL(this.href).searchParams.get('page');
+            currentPage = parseInt(page) || 1;
+
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+            loadTable(params);
+        });
+
+        // Sort link click
+        $(document).on('click', '.sort-link', function (e) {
+            e.preventDefault();
+            const sort = $(this).data('sort');
+            if (currentSort === sort) {
+                currentDir = currentDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort = sort;
+                currentDir = 'asc';
+            }
+
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+            loadTable(params);
+        });
+
+        $('#filterForm input, #filterForm select').on('input change', function () {
+            const formData = $('#filterForm').serializeArray();
+            const params = {};
+            formData.forEach(item => params[item.name] = item.value);
+            loadTable(params);
+        });
+
+    });
+</script>
+{% endblock %}

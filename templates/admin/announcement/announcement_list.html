@@ -1,0 +1,154 @@
+{% extends "_admin_base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<form id="filterForm">
+    <div class="container-filter">
+        <div class="half">
+            <div class="card card-blue-shadow">
+                <div class="card-txtfield card-body">
+                    <!-- Target Role Filter -->
+                    <label for="target_role">Target Role:</label>
+                    <select name="target_role" class="form-select select2">
+                        <option value="" selected>All</option>
+                        <option value="parent">Parent</option>
+                        <option value="student">Student</option>
+                        <option value="tutor">Tutor</option>
+                        <option value="all">All</option>
+                    </select>
+
+                    <!-- Created Date Filter -->
+                    <label for="created_at">Created Date:</label>
+                    <div class="uk-flex uk-flex-between uk-flex-middle uk-width-1-1">
+                        <div class="uk-width-expand">
+                            <input type="text" id="created_at_min" name="created_at_min" placeholder="Start date" class="uk-width-1-1">
+                        </div>
+                        <div class="uk-margin-small-left uk-margin-small-right uk-flex uk-flex-middle">-</div>
+                        <div class="uk-width-expand">
+                            <input type="text" id="created_at_max" name="created_at_max" placeholder="End date" class="uk-width-1-1">
+                        </div>
+                    </div>
+
+                    <!-- Items per page -->
+                    <label for="per_page">Item Per Page:</label>
+                    <select name="per_page" id="per_page" class="form-select select2">
+                        <option value="7">7</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-button-right mt-2">
+        <a href="/announcement/add" class="btn btn-primary">+ Add Announcement</a>
+    </div>
+
+    <div class="search-container card-right-tb mt-2">
+        <div class="search-bar">
+            <input type="search" name="search_title" placeholder="Search by title..." id="search" class="search-input">
+        </div>
+    </div>
+</form>
+
+<!-- Announcement Table -->
+<div id="announcementTable" class="mt-3">
+    <table class="admin-table1 table table-bordered text-center">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Title</th>
+                <th>Content</th>
+                <th>Target Role</th>
+                <th>Created</th>
+                <th>Expiry</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="announcementTableBody"></tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+
+// Load announcements via AJAX
+function loadAnnouncements(params = {}) {
+    const formData = $('#filterForm').serializeArray();
+    formData.forEach(item => params[item.name] = item.value);
+
+    params.page = currentPage;
+    params.per_page = $('#per_page').val() || 10;
+
+    $.get("/announcement/all", params, function(data) {
+        const tableBody = $('#announcementTableBody');
+        tableBody.empty();
+
+        if (!data.announcements || data.announcements.length === 0) {
+            tableBody.append('<tr><td colspan="7">No announcements found.</td></tr>');
+            return;
+        }
+
+        data.announcements.forEach((a, index) => {
+            const row = `
+                <tr>
+                    <td>${index + 1 + (currentPage-1)*params.per_page}</td>
+                    <td>${a.title}</td>
+                    <td>${a.content}</td>
+                    <td>${a.target_role}</td>
+                    <td>${a.created_at}</td>
+                    <td>${a.expiry_at}</td>
+                    <td>
+                        <a href="/announcement/edit/${a.announcement_id}" class="text-primary">✏️ Edit</a> |
+                        <a href="#" onclick="deleteAnnouncement(${a.announcement_id})" class="text-danger">🗑️ Delete</a>
+                    </td>
+                </tr>
+            `;
+            tableBody.append(row);
+        });
+    });
+}
+
+// Delete announcement
+function deleteAnnouncement(id) {
+    if (!confirm('Delete this announcement?')) return;
+    $.ajax({
+        url: `/announcement/delete/${id}`,
+        method: 'DELETE',
+        success: function(result) {
+            alert(result.message || result.error);
+            loadAnnouncements();
+        }
+    });
+}
+
+// DOM Ready
+$(document).ready(function() {
+    loadAnnouncements();
+
+    // Trigger load on search input
+    $('#search').on('input', function() {
+        currentPage = 1;
+        loadAnnouncements();
+    });
+
+    // Trigger load on filters change
+    $('#filterForm select, #filterForm input').on('input change', function() {
+        currentPage = 1;
+        loadAnnouncements();
+    });
+
+    // Flatpickr for date filters
+    flatpickr("#created_at_min", { dateFormat: "Y-m-d" });
+    flatpickr("#created_at_max", { dateFormat: "Y-m-d" });
+});
+</script>
+{% endblock %}

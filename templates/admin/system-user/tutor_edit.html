@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Tutor - Eaze Tuition</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f7f9fc; font-family: Arial, sans-serif; }
+    .container { max-width: 700px; }
+    .btn-back { margin-right: 10px; }
+  </style>
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+  <div class="card shadow-lg p-4">
+    <h3 class="mb-4">Edit Tutor</h3>
+
+    <form id="tutorForm">
+      <div class="mb-3">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-control" id="name" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">IC No</label>
+        <input type="text" class="form-control" id="ic_no">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Gender</label>
+        <select class="form-select" id="gender">
+          <option value="">-- Select Gender --</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Date of Birth</label>
+        <input type="date" class="form-control" id="dob">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Address</label>
+        <textarea class="form-control" id="address" rows="2"></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Telephone No</label>
+        <input type="text" class="form-control" id="tel_no" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Age</label>
+        <input type="number" class="form-control" id="age" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Position</label>
+        <input type="text" class="form-control" id="position" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Salary</label>
+        <input type="number" step="0.01" class="form-control" id="salary" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="status">
+          <option value="1">Active</option>
+          <option value="0">Inactive</option>
+        </select>
+      </div>
+
+      <div class="d-flex justify-content-between">
+        <a href="/users/tutors/list" class="btn btn-secondary btn-back">Back</a>
+        <button type="submit" class="btn btn-primary">Update Tutor</button>
+      </div>
+    </form>
+
+    <div id="alertBox" class="alert mt-4 d-none"></div>
+  </div>
+</div>
+
+<script>
+
+const pathParts = window.location.pathname.split('/');
+const user_id = pathParts[pathParts.length - 1];
+
+
+async function loadTutor() {
+  try {
+    const res = await fetch(`/users/tutors/${user_id}`);
+    if (!res.ok) throw new Error("Failed to load tutor");
+
+    const data = await res.json();
+    const t = data.tutor;
+
+    document.getElementById("name").value = t.name;
+    document.getElementById("email").value = t.email;
+    document.getElementById("ic_no").value = t.ic_no || "";
+    document.getElementById("gender").value = t.gender || "";
+    document.getElementById("dob").value = t.dob || "";
+    document.getElementById("address").value = t.address || "";
+    document.getElementById("tel_no").value = t.tel_no || "";
+    document.getElementById("age").value = t.age || "";
+    document.getElementById("position").value = t.position || "";
+    document.getElementById("salary").value = t.salary || "";
+    document.getElementById("status").value = t.status;
+  } catch (err) {
+    alert("Error loading tutor: " + err.message);
+  }
+}
+
+document.getElementById("tutorForm").addEventListener("submit", async function(event) {
+  event.preventDefault();
+
+  const data = {
+    name: document.getElementById("name").value,
+    email: document.getElementById("email").value,
+    ic_no: document.getElementById("ic_no").value,
+    gender: document.getElementById("gender").value,
+    dob: document.getElementById("dob").value,
+    address: document.getElementById("address").value,
+    tel_no: document.getElementById("tel_no").value,
+    age: document.getElementById("age").value,
+    position: document.getElementById("position").value,
+    salary: document.getElementById("salary").value,
+    status: document.getElementById("status").value
+  };
+
+  try {
+    const response = await fetch(`/users/tutors/edit/${user_id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+    const alertBox = document.getElementById("alertBox");
+
+    if (response.ok && result.success) {
+      alertBox.className = "alert alert-success mt-4";
+      alertBox.textContent = "✅ Tutor updated successfully!";
+      alertBox.classList.remove("d-none");
+
+      setTimeout(() => {
+        window.location.href = "/users/tutors/list";
+      }, 1500);
+
+    } else {
+      alertBox.className = "alert alert-danger mt-4";
+      alertBox.textContent = "❌ Error: " + (result.error || "Failed to update tutor");
+      alertBox.classList.remove("d-none");
+    }
+  } catch (err) {
+    alert("Error connecting to server: " + err.message);
+  }
+});
+
+document.addEventListener("DOMContentLoaded", loadTutor);
+</script>
+
+</body>
+</html>
